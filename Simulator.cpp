@@ -12,7 +12,11 @@ std::vector<PhyCore*> bigCores;
 std::vector<PhyCore*> littleCores;
 
 extern void genSchedPlan();
-//extern VirCore* schedule_next();
+extern void EC_schedule_next(PhyCore*, VirCore*);
+
+void schedule_next(PhyCore* p, VirCore* v){
+	EC_schedule_next(p, v);
+}
 
 int main(){
     
@@ -46,53 +50,39 @@ int main(){
 
 	// simulation
 	Event* currEvent;
-	Event* nextVCore;
+	// Event* nextEvent;
 	while(!eventQ.empty()){
 		// pop next
 		std::pop_heap(eventQ.begin(), eventQ.end());
 		currEvent = eventQ.back();
 		eventQ.pop_back();
 		
-		nextVCore = NULL;
+		//nextVCore = NULL;
+		PhyCore* curr_pCore;
+		VirCore* curr_vCore;
 		switch(currEvent->getType()){
-			case t_yield:				
-				PhyCore* curr_pCore;
-				VirCore* curr_vCore;
+			case t_yield:								
 				currEvent->getCore(&curr_pCore, &curr_vCore);
-
-				if(curr_vCore->consumeCredit(curr_pCore->getPid(), 0.0)){
-					// [TODO] calculate how much credit consumed!!!!
-
-					// waiting for I/O
-				}
-				else{
-					// no credit
-				}
-
-				// put the current virtual core back to run-queue
-
-				curr_vCore->waitIO();
-
-				// find next virtual core for execution				
-
-				//nextVCore = schedule_next();
-			
+				schedule_next(curr_pCore, curr_vCore);
 				break;
 			case t_interval:
 				// fetch system information, such as loading, power consumption, ...
 
 				// generate new scheduling plan
 				genSchedPlan();
+
 				break;			
 			case t_resume:
 				// resume virtual core for execution
+				currEvent->getCore(&curr_pCore, &curr_vCore);
+
 				break;
 		}
-		if(nextVCore != NULL){
-			// push new
-			eventQ.push_back(nextVCore);
-			std::push_heap(eventQ.begin(), eventQ.end());
-		}
+		/*
+		// push new
+		eventQ.push_back(nextVCore);
+		std::push_heap(eventQ.begin(), eventQ.end());		
+		*/
 	};
     
 	// output results

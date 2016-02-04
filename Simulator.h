@@ -86,6 +86,7 @@ public:
 	double waitIO();
 	bool toRun();
 	vcoreStatus queryStatus();
+	unsigned int coreWCredit();
 private:
 	unsigned int vid;
 	unsigned int expectedWorkload;
@@ -185,6 +186,17 @@ vcoreStatus VirCore::queryStatus(){
 	return status;
 }
 
+unsigned int VirCore::coreWCredit(){
+	// return a physical core this virtual core has credits on
+	unsigned int pid = 0;
+	for(std::map<unsigned int, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
+		if(it->second > 0){
+			pid = it->first;
+			break;
+		}
+	}
+	return pid;
+}
 class PhyCore{
 public:
 	PhyCore(unsigned int);
