@@ -59,11 +59,12 @@ public:
 	unsigned int getExpWorkload();
 	double getWorkload();
 	double exeWorkload(double);
+	double queryCredit();
 	double queryCredit(PhyCore*);
 	double consumeCredit(PhyCore*, double);
-	double waitIO();
-	bool toRun();
+	double waitIO();	
 	vcoreStatus queryStatus();
+	bool changeStatus(vcoreStatus);
 	PhyCore* coreWCredit();
 private:
 	unsigned int vid;
@@ -82,12 +83,13 @@ public:
 	coreType getType();
 	void setFreq(unsigned int);
 	unsigned int getFreq();
-	void startExe(double);
+	bool startExe(double);
 	void stopExe(double);
+	bool is_running();
 	double getLastStart();
 	double acquireLoad();
 	bool insertToRunQ(VirCore*, queuePos);
-	VirCore* popRunQ();
+	VirCore* peakRunQ();
 	bool removeFromRunQ(VirCore*);	
 	VirCore* findRunnable();
 	VirCore* findRunnable(PhyCore*);

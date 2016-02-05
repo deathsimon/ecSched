@@ -1,10 +1,13 @@
 #include "Simulator.h"
 
 extern std::vector<Event*> eventQ;
+extern std::vector<VirCore*> virtualCores;
 extern std::vector<PhyCore*> bigCores;
 extern std::vector<PhyCore*> littleCores;
 extern double t_now;
 extern double t_sync;
+
+extern void genSchedPlan();
 
 bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
 	// locate v in source;
@@ -21,6 +24,29 @@ bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
 		pos = q_FIFO;
 	}
 	return dest->insertToRunQ(v, pos);	
+}
+bool execVcore(PhyCore* p, VirCore* v){
+	Event* newEvent;
+	double exeTime = t_sync - t_now;
+	double creditTime = v->queryCredit(p) / C_MAGICNUM;
+	double workTime = v->getWorkload() / p->getFreq();
+
+	if(creditTime < exeTime){
+		exeTime = creditTime;
+	}
+	if(workTime < exeTime){
+		exeTime = workTime;
+	}
+
+	// create an event for the virtual core and push into event queue
+	newEvent = new Event(t_now + exeTime, t_yield, p, v);
+	eventQ.push_back(newEvent);
+	std::push_heap(eventQ.begin(), eventQ.end());
+
+	if(!p->startExe(t_now)){
+		return false;
+	}
+	return true;
 }
 
 bool EC_schedule_next(PhyCore* p, VirCore* v){
@@ -95,6 +121,7 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	if(t_now != t_sync){
 		// find next virtual core for execution
 		nextVCore = p->findRunnable();
+		targetCore = p;
 		
 		if(nextVCore == NULL){
 			// cannot find runnable from the run queue,
@@ -111,37 +138,18 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 				&& pid < (targetCluster->size()-1)){
 				targetCore = (*targetCluster)[pid+1];
 				nextVCore = targetCore->findRunnable(p);
-			}
-
-			if(nextVCore != NULL){
-				// migrate the virtual core here
-				migrateVCore(nextVCore, targetCore, p, true);
-			}
+			}			
 		}
 
-		double exeTime;
-		double creditTime;
-		double workTime;
-
+		
 		if(nextVCore != NULL){
+			// migrate the virtual core here
+			migrateVCore(nextVCore, targetCore, p, true);
+
 			// execute the next virtual core
-			exeTime = t_sync - t_now;
-			creditTime = nextVCore->queryCredit(p) / C_MAGICNUM;
-			workTime = nextVCore->getWorkload() / p->getFreq();
-
-			if(creditTime < exeTime){
-				exeTime = creditTime;
-			}
-
-			if(workTime < exeTime){
-				exeTime = workTime;
-			}
-
-			// create an event for the virtual core and push into event queue
-			newEvent = new Event(t_now + exeTime, t_yield, p, nextVCore);
-			eventQ.push_back(newEvent);
-			std::push_heap(eventQ.begin(), eventQ.end());
-			p->startExe(t_now);
+			if(!execVcore(p, nextVCore)){
+				return false;
+			}			
 		}
 		else{
 			// idle the physical core
@@ -152,5 +160,61 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	// put the current virtual core to the run-queue of target core
 	migrateVCore(v, p, p, false);
 		
+	return true;
+}
+
+bool EC_schedule_resume(PhyCore* p, VirCore* v){		
+	if(!v->changeStatus(vs_ready)){
+		// ignore: vs_ready -> vs_ready
+		if(v->queryStatus() != vs_ready){
+			return false;
+		}
+	}
+	if(p->peakRunQ() == v){
+		if(!execVcore(p, v)){
+			return false;
+		}
+	}
+	return true;
+}
+
+bool EC_sync(){
+	double power_consumption = 0.0;
+	double credit_remains = 0.0;
+
+	// Stop running cores first
+	for(int i = 1; i <= N_BIGCORE; i++){
+		if(bigCores[i]->is_running())
+			bigCores[i]->stopExe(t_now);
+	}
+	for(int i = 1; i <= N_LITCORE; i++){
+		if(littleCores[i]->is_running())
+			littleCores[i]->stopExe(t_now);
+	}
+
+	// fetch system information, such as loading, power consumption, ...	
+	for(int i = 1; i <= N_BIGCORE; i++){
+		power_consumption += bigCores[i]->acquireLoad()*bigCores[i]->getFreq();
+	}
+	for(int i = 1; i <= N_LITCORE; i++){
+		power_consumption += littleCores[i]->acquireLoad()*littleCores[i]->getFreq();
+	}
+	// get remaining credits
+	for(int i = 1; i <= N_VIRCORE; i++){
+		credit_remains += virtualCores[i]->queryCredit();
+	}
+
+	// generate new scheduling plan
+	genSchedPlan();	
+	
+	// resume cores for execution
+	for(int i = 1; i <= N_BIGCORE; i++){
+		if(bigCores[i]->peakRunQ() != NULL)
+			bigCores[i]->startExe(t_now);
+	}
+	for(int i = 1; i <= N_LITCORE; i++){
+		if(littleCores[i]->peakRunQ() != NULL)
+			littleCores[i]->startExe(t_now);
+	}
 	return true;
 }

@@ -11,11 +11,18 @@ std::vector<PhyCore*> littleCores;
 double t_now = 0;
 double t_sync = T_PERIOD;
 
-extern void genSchedPlan();
 extern bool EC_schedule_next(PhyCore*, VirCore*);
+extern bool EC_schedule_resume(PhyCore*, VirCore*);
+extern bool EC_sync();
 
 bool schedule_next(PhyCore* p, VirCore* v){
 	return EC_schedule_next(p, v);
+}
+bool schedule_resume(PhyCore* p, VirCore* v){
+	return EC_schedule_resume(p, v);
+}
+bool sync(){
+	return EC_sync();
 }
 
 int main(){
@@ -72,30 +79,20 @@ int main(){
 				}
 				break;
 			case t_interval:
-				// [TODO] fetch system information, such as loading, power consumption, ...	
-
-				// .stopExe();
-				// .acquireLoad();				
-
-				// generate new scheduling plan
-				genSchedPlan();				
-
-				// .startExe();
+				sync();
 
 				t_sync += T_PERIOD;
 
 				break;			
 			case t_resume:
-				// [TODO] resume virtual core for execution
+				// resume virtual core for execution
 				currEvent->getCore(&curr_pCore, &curr_vCore);
-
+				if(!schedule_resume(curr_pCore, curr_vCore)){
+					// somethings wrong
+					return -1;
+				}
 				break;
 		}
-		/*
-		// push new
-		eventQ.push_back(nextVCore);
-		std::push_heap(eventQ.begin(), eventQ.end());		
-		*/
 	};
     
 	// [TODO] output results
@@ -168,13 +165,15 @@ unsigned int VirCore::getExpWorkload(){
 		};
 		delete newInput;
 	}
-	// round up the expected workload
+	// [TODO] round up the expected workload
 	//expW = expectedWorkload;
 
 	return expW;
 }
 double VirCore::getWorkload(){
-	return working_seq.front();
+	if(!working_seq.empty())
+		return working_seq.front();
+	return 0.0;
 }
 double VirCore::exeWorkload(double w){
 	working_seq[0] -= w;
@@ -183,6 +182,13 @@ double VirCore::exeWorkload(double w){
 		return 0.0;
 	}
 	return working_seq.front();
+}
+double VirCore::queryCredit(){
+	double credit_remain = 0.0;
+	for(std::map<PhyCore*, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
+		credit_remain += it->second;
+	}
+	return credit_remain;
 }
 double VirCore::queryCredit(PhyCore* pid){
 	double credit_remain = 0.0;
@@ -194,50 +200,53 @@ double VirCore::queryCredit(PhyCore* pid){
 double VirCore::consumeCredit(PhyCore* pid, double c){
 	energyCredit[pid] -= c;
 	if(energyCredit[pid] == 0.0){
+		energyCredit.erase(pid);
 		status = vs_nocredit;
+		return 0.0;
 	}
 	return energyCredit[pid];
 }
 double VirCore::waitIO(){
 	// return the amount of time waiting for I/O
 	double result = -1;
-	switch(status){
-		case vs_waiting:
-			fprintf(stderr, "[Error] waitIO(): virtual core %d is already waiting for I/O.\n", vid);
-			break;
-		case vs_nocredit:
-			fprintf(stderr, "[Warning] waitIO(): virtual core %d has no credit.\n", vid);
-			break;
-		case vs_ready:
-			fprintf(stderr, "[Warning] waitIO(): virtual core %d is not running.\n", vid);
-			break;
-		default:
-			status = vs_waiting;
-			result = waiting_seq.front();
-			waiting_seq.pop_front();
+	if(changeStatus(vs_waiting)){
+		result = waiting_seq.front();
+		waiting_seq.pop_front();
 	}
 	return result;
 }
-bool VirCore::toRun(){
-	bool success = false;
-	switch(status){
-		case vs_running:
-			fprintf(stderr, "[Error] toRun(): virtual core %d already running.\n", vid);
-			break;
-		case vs_nocredit:
-			fprintf(stderr, "[Error] toRun(): virtual core %d has no credit.\n", vid);
-			break;
-		case vs_waiting:
-			fprintf(stderr, "[Error] toRun(): virtual core %d is waiting for I/O.\n", vid);
-			break;
-		default:
-			status = vs_running;
-			success = true;
-	}
-	return success;
-}
 vcoreStatus VirCore::queryStatus(){
 	return status;
+}
+bool VirCore::changeStatus(vcoreStatus newStatus){
+	bool result = false;
+	if(status == newStatus){
+		fprintf(stderr, "[Error] changeStatus(): virtual core %d status unchanged.\n", vid);		
+	}
+	else{
+		switch(status){
+			case vs_ready:
+				if(newStatus != vs_running){
+					fprintf(stderr, "[Error] changeStatus(): virtual core %d is not running.\n", vid);
+				}
+				break;
+			case vs_nocredit:
+				if(newStatus != vs_ready){
+					fprintf(stderr, "[Error] changeStatus(): virtual core %d has no credit.\n", vid);
+				}
+				break;
+			case vs_waiting:
+				if(newStatus != vs_ready){
+					fprintf(stderr, "[Error] changeStatus(): virtual core %d is waiting for I/O.\n", vid);
+				}
+				break;
+			default:
+				status = newStatus;
+				result = true;
+				break;
+		}		
+	}
+	return result;
 }
 PhyCore* VirCore::coreWCredit(){
 	// return a physical core this virtual core has credits on
@@ -272,9 +281,10 @@ void PhyCore::setFreq(unsigned int f){
 unsigned int PhyCore::getFreq(){
 	return freq;
 }
-void PhyCore::startExe(double t){	
+bool PhyCore::startExe(double t){
 	lastStart = t;
 	running = true;
+	return runQueue.front()->changeStatus(vs_running);
 }
 void PhyCore::stopExe(double t){
 	if(!running){
@@ -283,6 +293,9 @@ void PhyCore::stopExe(double t){
 	}
 	run_time += (t - lastStart);
 	running = false;
+}
+bool PhyCore::is_running(){
+	return running;
 }
 double PhyCore::getLastStart(){
 	if(running){
@@ -315,10 +328,10 @@ bool PhyCore::insertToRunQ(VirCore* v, queuePos pos){
 
 	return true;
 }
-VirCore* PhyCore::popRunQ(){
-	VirCore* top = runQueue.front();
-	runQueue.pop_front();
-	return top;
+VirCore* PhyCore::peakRunQ(){
+	if(runQueue.empty())
+		return NULL;
+	return runQueue.front();
 }
 bool PhyCore::removeFromRunQ(VirCore* v){
 	std::deque<VirCore*>::iterator target = runQueue.end();
