@@ -14,6 +14,7 @@
 enum eventType{t_yield = 1, t_interval, t_resume};
 enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
+enum queuePos{q_head = 1, q_FIFO, q_tail};
 
 struct inputWorkload{
 	unsigned int expWorkload;
@@ -78,16 +79,18 @@ class PhyCore{
 public:
 	PhyCore(coreType, unsigned int);
 	unsigned int getPid();
+	coreType getType();
 	void setFreq(unsigned int);
 	unsigned int getFreq();
 	void startExe(double);
 	void stopExe(double);
 	double getLastStart();
 	double acquireLoad();
-	void pushRunQ(VirCore*);
+	bool insertToRunQ(VirCore*, queuePos);
 	VirCore* popRunQ();
-	VirCore* popRunQ(VirCore*);	
+	bool removeFromRunQ(VirCore*);	
 	VirCore* findRunnable();
+	VirCore* findRunnable(PhyCore*);
 private:
 	unsigned int pid;
 	coreType type;

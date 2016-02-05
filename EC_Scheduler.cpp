@@ -1,18 +1,39 @@
 #include "Simulator.h"
 
 extern std::vector<Event*> eventQ;
+extern std::vector<PhyCore*> bigCores;
+extern std::vector<PhyCore*> littleCores;
 extern double t_now;
 extern double t_sync;
+
+bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
+	// locate v in source;
+	if(!source->removeFromRunQ(v)){
+		return false;
+	}
+
+	//insertToRunQ
+	queuePos pos;
+	if(steal){
+		pos = q_head;
+	}
+	else{
+		pos = q_FIFO;
+	}
+	return dest->insertToRunQ(v, pos);	
+}
 
 bool EC_schedule_next(PhyCore* p, VirCore* v){
 
 	PhyCore* targetCore = p;
 	VirCore* nextVCore;
 	
-	double workloadProcessed = (t_now - p->getLastStart())*p->getFreq();
+	double executionTime = t_now - p->getLastStart();
+
+	double workloadProcessed = executionTime*p->getFreq();
 	double workloadRemain = v->exeWorkload(workloadProcessed);
 
-	double creditConsumed = (t_now - p->getLastStart())*C_MAGICNUM;
+	double creditConsumed = executionTime*C_MAGICNUM;
 	double credit_remain = v->consumeCredit(p, creditConsumed);
 
 	Event* newEvent;
@@ -74,11 +95,36 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	if(t_now != t_sync){
 		// find next virtual core for execution
 		nextVCore = p->findRunnable();
+		
+		if(nextVCore == NULL){
+			// cannot find runnable from the run queue,
+			// try to steal workload from neighbors
+			unsigned int pid = p->getPid();
+			nextVCore = NULL;
+			std::vector<PhyCore*>* targetCluster;
+			(p->getType() == c_big)?(targetCluster = &bigCores):(targetCluster = &littleCores);
+			if(pid > 1){
+				targetCore = (*targetCluster)[pid-1];
+				nextVCore = targetCore->findRunnable(p);
+			}
+			if(nextVCore == NULL 
+				&& pid < (targetCluster->size()-1)){
+				targetCore = (*targetCluster)[pid+1];
+				nextVCore = targetCore->findRunnable(p);
+			}
+
+			if(nextVCore != NULL){
+				// migrate the virtual core here
+				migrateVCore(nextVCore, targetCore, p, true);
+			}
+		}
 
 		double exeTime;
 		double creditTime;
 		double workTime;
+
 		if(nextVCore != NULL){
+			// execute the next virtual core
 			exeTime = t_sync - t_now;
 			creditTime = nextVCore->queryCredit(p) / C_MAGICNUM;
 			workTime = nextVCore->getWorkload() / p->getFreq();
@@ -94,17 +140,17 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 			// create an event for the virtual core and push into event queue
 			newEvent = new Event(t_now + exeTime, t_yield, p, nextVCore);
 			eventQ.push_back(newEvent);
-			std::push_heap(eventQ.begin(), eventQ.end());	
+			std::push_heap(eventQ.begin(), eventQ.end());
+			p->startExe(t_now);
 		}
 		else{
-			// [TODO] steal workload
-			// or
-			// [TODO] idle the physical core
+			// idle the physical core
+			p->stopExe(t_now);
 		}
 	}
 
-	// [TODO] put the current virtual core to the run-queue of target core
-
-			
+	// put the current virtual core to the run-queue of target core
+	migrateVCore(v, p, p, false);
+		
 	return true;
 }

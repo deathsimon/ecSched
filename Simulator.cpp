@@ -65,7 +65,7 @@ int main(){
 		VirCore* curr_vCore;
 		switch(currEvent->getType()){
 			case t_yield:								
-				currEvent->getCore(&curr_pCore, &curr_vCore);
+				currEvent->getCore(&curr_pCore, &curr_vCore);				
 				if(!schedule_next(curr_pCore, curr_vCore)){
 					// somethings wrong
 					return -1;
@@ -185,7 +185,7 @@ double VirCore::exeWorkload(double w){
 	return working_seq.front();
 }
 double VirCore::queryCredit(PhyCore* pid){
-	double credit_remain = 0;
+	double credit_remain = 0.0;
 	if(energyCredit.find(pid) != energyCredit.end()){
 		credit_remain = energyCredit[pid];
 	}
@@ -263,6 +263,9 @@ PhyCore::PhyCore(coreType t, unsigned int id){
 unsigned int PhyCore::getPid(){
 	return pid;
 }
+coreType PhyCore::getType(){
+	return type;
+}
 void PhyCore::setFreq(unsigned int f){
 	freq = f;
 }
@@ -292,15 +295,61 @@ double PhyCore::acquireLoad(){
 	run_time = 0.0;
 	return result;
 }
-void PhyCore::pushRunQ(VirCore* v){
+bool PhyCore::insertToRunQ(VirCore* v, queuePos pos){
 
+	if(pos == q_head){
+		runQueue.push_front(v);
+	}
+	else if(pos == q_tail){
+		runQueue.push_back(v);
+	}
+	else{
+		std::deque<VirCore*>::iterator it;
+		for(it = runQueue.begin(); it != runQueue.begin(); ++it){
+			if((*it)->queryStatus() == vs_nocredit){
+				break;
+			}
+		}
+		runQueue.insert(it, v);
+	}
+
+	return true;
 }
-//VirCore* popRunQ();
-//VirCore* popRunQ(VirCore*);
+VirCore* PhyCore::popRunQ(){
+	VirCore* top = runQueue.front();
+	runQueue.pop_front();
+	return top;
+}
+bool PhyCore::removeFromRunQ(VirCore* v){
+	std::deque<VirCore*>::iterator target = runQueue.end();
+	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
+		if((*it) == v){
+			target = it;
+		}
+	}
+	if(target != runQueue.end()){
+		runQueue.erase(target);
+	}
+	else{
+		fprintf(stderr, "[Error] popRunQ: cannot find target in physical core %d.\n", pid);
+		return false;
+	}
+	return true;
+}
 VirCore* PhyCore::findRunnable(){
 	VirCore* target = NULL;
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
 		if((*it)->queryStatus() == vs_ready){
+			target = (*it);
+		}	
+	}
+	return target;
+}
+VirCore* PhyCore::findRunnable(PhyCore* p){
+	VirCore* target = NULL;
+	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
+		if((*it)->queryStatus() == vs_ready
+			&& (*it)->queryCredit(p) != 0.0){
 			target = (*it);
 		}	
 	}
