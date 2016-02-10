@@ -16,14 +16,19 @@ enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
 
+class VirCore;
+class PhyCore;
+
 struct inputWorkload{
 	unsigned int expWorkload;
 	std::deque<unsigned int> working;
 	std::deque<unsigned int> waiting;
 };
-
-class VirCore;
-class PhyCore;
+struct coreCluster{
+	std::vector<PhyCore*> cores;
+	coreType type;
+	int amount;
+};
 
 class Event{
 public:

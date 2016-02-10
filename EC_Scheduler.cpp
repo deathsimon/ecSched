@@ -2,8 +2,8 @@
 
 extern std::vector<Event*> eventQ;
 extern std::vector<VirCore*> virtualCores;
-extern std::vector<PhyCore*> bigCores;
-extern std::vector<PhyCore*> littleCores;
+extern coreCluster bigCores;
+extern coreCluster littleCores;
 extern double t_now;
 extern double t_sync;
 
@@ -128,15 +128,15 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 			// try to steal workload from neighbors
 			unsigned int pid = p->getPid();
 			nextVCore = NULL;
-			std::vector<PhyCore*>* targetCluster;
+			coreCluster* targetCluster;
 			(p->getType() == c_big)?(targetCluster = &bigCores):(targetCluster = &littleCores);
 			if(pid > 1){
-				targetCore = (*targetCluster)[pid-1];
+				targetCore = targetCluster->cores[pid-1];
 				nextVCore = targetCore->findRunnable(p);
 			}
 			if(nextVCore == NULL 
-				&& pid < (targetCluster->size()-1)){
-				targetCore = (*targetCluster)[pid+1];
+				&& pid < (targetCluster->cores.size()-1)){
+				targetCore = targetCluster->cores[pid+1];
 				nextVCore = targetCore->findRunnable(p);
 			}			
 		}
@@ -177,28 +177,39 @@ bool EC_schedule_resume(PhyCore* p, VirCore* v){
 	}
 	return true;
 }
+void stopCores(coreCluster* cluster, double now){
+	for(int i = 1; i <= cluster->amount ; i++){
+		if(cluster->cores[i-1]->is_running()){
+			cluster->cores[i-1]->stopExe(now);
+		}
+	}
+}
+double calculatePower(coreCluster* cluster){
+	double power_consumption = 0.0;
+	for(int i = 1; i <= cluster->amount; i++){
+		power_consumption += cluster->cores[i-1]->acquireLoad() * cluster->cores[i-1]->getFreq();
+	}
+	return power_consumption;
+}
+void resumeCores(coreCluster* cluster, double now){
+	for(int i = 1; i <= cluster->amount; i++){
+		if(cluster->cores[i-1]->peakRunQ() != NULL)
+			cluster->cores[i-1]->startExe(t_now);
+	}
+}
 
 bool EC_sync(){
 	double power_consumption = 0.0;
 	double credit_remains = 0.0;
 
 	// Stop running cores first
-	for(int i = 1; i <= N_BIGCORE; i++){
-		if(bigCores[i]->is_running())
-			bigCores[i]->stopExe(t_now);
-	}
-	for(int i = 1; i <= N_LITCORE; i++){
-		if(littleCores[i]->is_running())
-			littleCores[i]->stopExe(t_now);
-	}
+	stopCores(&bigCores, t_now);
+	stopCores(&littleCores, t_now);	
 
-	// fetch system information, such as loading, power consumption, ...	
-	for(int i = 1; i <= N_BIGCORE; i++){
-		power_consumption += bigCores[i]->acquireLoad()*bigCores[i]->getFreq();
-	}
-	for(int i = 1; i <= N_LITCORE; i++){
-		power_consumption += littleCores[i]->acquireLoad()*littleCores[i]->getFreq();
-	}
+	// fetch system information, such as loading, power consumption, ...
+	power_consumption += calculatePower(&bigCores);
+	power_consumption += calculatePower(&littleCores);
+	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){
 		credit_remains += virtualCores[i]->queryCredit();
@@ -208,13 +219,8 @@ bool EC_sync(){
 	genSchedPlan();	
 	
 	// resume cores for execution
-	for(int i = 1; i <= N_BIGCORE; i++){
-		if(bigCores[i]->peakRunQ() != NULL)
-			bigCores[i]->startExe(t_now);
-	}
-	for(int i = 1; i <= N_LITCORE; i++){
-		if(littleCores[i]->peakRunQ() != NULL)
-			littleCores[i]->startExe(t_now);
-	}
+	resumeCores(&bigCores, t_now);
+	resumeCores(&littleCores, t_now);
+	
 	return true;
 }

@@ -6,8 +6,10 @@
 
 std::vector<Event*> eventQ;
 std::vector<VirCore*> virtualCores;
-std::vector<PhyCore*> bigCores;
-std::vector<PhyCore*> littleCores;
+//std::vector<PhyCore*> bigCores;
+//std::vector<PhyCore*> littleCores;
+coreCluster bigCores;
+coreCluster littleCores;
 double t_now = 0;
 double t_sync = T_PERIOD;
 
@@ -35,18 +37,22 @@ int main(){
 	std::make_heap(eventQ.begin(), eventQ.end());
 
 	// set up big and little core cluster
-	bigCores.clear();
-	littleCores.clear();
 	PhyCore* newPhyCore;
+	bigCores.cores.clear();	
+	bigCores.amount = N_BIGCORE;
+	bigCores.type = c_big;
 	for(int i = 1; i <= N_BIGCORE; i++){
 		newPhyCore = new PhyCore(c_big, i);
 		// [TODO] read input here
-		bigCores.push_back(newPhyCore);
-	}
+		bigCores.cores.push_back(newPhyCore);
+	}	
+	littleCores.cores.clear();
+	littleCores.amount = N_LITCORE;
+	littleCores.type = c_little;
 	for(int i = 1; i <= N_LITCORE; i++){
 		newPhyCore = new PhyCore(c_little, i);
 		// [TODO] read input here
-		littleCores.push_back(newPhyCore);
+		littleCores.cores.push_back(newPhyCore);
 	}
 
 	// set up virtual cores
