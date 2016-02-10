@@ -6,8 +6,6 @@
 
 std::vector<Event*> eventQ;
 std::vector<VirCore*> virtualCores;
-//std::vector<PhyCore*> bigCores;
-//std::vector<PhyCore*> littleCores;
 coreCluster bigCores;
 coreCluster littleCores;
 double t_now = 0;
@@ -27,7 +25,41 @@ bool sync(){
 	return EC_sync();
 }
 
-int main(){
+bool setupCoreCluster(coreCluster* cluster, std::string filename){
+	
+	FILE* fp = fopen(filename.c_str(), "r");
+	PhyCore* newPhyCore;
+	int amount = 0;
+	unsigned int freq;
+	
+	if(!fp){
+		return false;
+	}
+	cluster->cores.clear();
+	cluster->avFreq.clear();
+	
+	// read amount of cores in the cluster from file
+	fscanf(fp, "%d", &amount);
+	cluster->amount = amount;
+	
+	for(int i = 1; i <= amount; i++){
+		newPhyCore = new PhyCore(cluster->type, i);		
+		cluster->cores.push_back(newPhyCore);
+	}
+
+	// read available frequencies from file
+	fscanf(fp, "%d", &amount);
+	cluster->amountFreq = amount;
+	for(int i = 1; i <= amount; i++){
+		fscanf(fp, "%d", &freq);
+		cluster->avFreq.push_back(freq);
+	}
+	fclose(fp);
+
+	return true;
+}
+
+int main(int argc, char* argv){
 
 	// set up event queue
     eventQ.clear();	
@@ -37,23 +69,10 @@ int main(){
 	std::make_heap(eventQ.begin(), eventQ.end());
 
 	// set up big and little core cluster
-	PhyCore* newPhyCore;
-	bigCores.cores.clear();	
-	bigCores.amount = N_BIGCORE;
 	bigCores.type = c_big;
-	for(int i = 1; i <= N_BIGCORE; i++){
-		newPhyCore = new PhyCore(c_big, i);
-		// [TODO] read input here
-		bigCores.cores.push_back(newPhyCore);
-	}	
-	littleCores.cores.clear();
-	littleCores.amount = N_LITCORE;
+	setupCoreCluster(&bigCores, "bigCore.txt");
 	littleCores.type = c_little;
-	for(int i = 1; i <= N_LITCORE; i++){
-		newPhyCore = new PhyCore(c_little, i);
-		// [TODO] read input here
-		littleCores.cores.push_back(newPhyCore);
-	}
+	setupCoreCluster(&littleCores, "littleCore.txt");	
 
 	// set up virtual cores
 	virtualCores.clear();
@@ -101,8 +120,7 @@ int main(){
 		}
 	};
     
-	// [TODO] output results
-
+	// output results
 
 	return 0;
 }
@@ -141,6 +159,7 @@ VirCore::VirCore(unsigned int id){
 	vid = id;
 	expectedWorkload = 0;
 	status = vs_nocredit;
+	speedUp = 1.0;
 	input_workload_seq.clear();
 	working_seq.clear();
 	waiting_seq.clear();
@@ -149,8 +168,11 @@ VirCore::VirCore(unsigned int id){
 unsigned int VirCore::getID(){
 	return vid;
 }
+double VirCore::getSpeedUp(){
+	return speedUp;
+}
 void VirCore::readInput(std::string){
-
+	// [TODO]
 }
 unsigned int VirCore::getExpWorkload(){
 	unsigned int expW;
@@ -189,19 +211,28 @@ double VirCore::exeWorkload(double w){
 	}
 	return working_seq.front();
 }
-double VirCore::queryCredit(){
+double VirCore::queryCreditReset(){
 	double credit_remain = 0.0;
 	for(std::map<PhyCore*, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
 		credit_remain += it->second;
 	}
+	energyCredit.clear();
 	return credit_remain;
 }
-double VirCore::queryCredit(PhyCore* pid){
+double VirCore::queryCredit(PhyCore* p){
 	double credit_remain = 0.0;
-	if(energyCredit.find(pid) != energyCredit.end()){
-		credit_remain = energyCredit[pid];
+	if(energyCredit.find(p) != energyCredit.end()){
+		credit_remain = energyCredit[p];
 	}
 	return credit_remain;
+}
+bool VirCore::setCredit(PhyCore* p, double credit){
+	if(energyCredit.find(p) != energyCredit.end()){
+		// not cleaned
+		return false;
+	}
+	energyCredit[p] = credit;
+	return true;
 }
 double VirCore::consumeCredit(PhyCore* pid, double c){
 	energyCredit[pid] -= c;

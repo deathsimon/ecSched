@@ -209,11 +209,13 @@ bool EC_sync(){
 	// fetch system information, such as loading, power consumption, ...
 	power_consumption += calculatePower(&bigCores);
 	power_consumption += calculatePower(&littleCores);
+	fprintf(stdout, "Power consumption of time %lf is :%lf\n", t_now, power_consumption);
 	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){
-		credit_remains += virtualCores[i]->queryCredit();
+		credit_remains += virtualCores[i]->queryCreditReset();
 	}
+	fprintf(stdout, "Remaining credit at time %lf is :%lf\n", t_now, credit_remains);
 
 	// generate new scheduling plan
 	genSchedPlan();	

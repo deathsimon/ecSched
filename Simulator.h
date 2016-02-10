@@ -11,6 +11,8 @@
 #define T_INTERRUPT 0.05
 #define C_MAGICNUM	100
 
+#define THRESHOLD	900*4
+
 enum eventType{t_yield = 1, t_interval, t_resume};
 enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
@@ -28,6 +30,8 @@ struct coreCluster{
 	std::vector<PhyCore*> cores;
 	coreType type;
 	int amount;
+	unsigned int amountFreq;
+	std::vector<unsigned int> avFreq;
 };
 
 class Event{
@@ -60,12 +64,14 @@ class VirCore{
 public:
 	VirCore(unsigned int);
 	unsigned int getID();
+	double getSpeedUp();
 	void readInput(std::string);
 	unsigned int getExpWorkload();
 	double getWorkload();
-	double exeWorkload(double);
-	double queryCredit();
+	double exeWorkload(double);	
+	double queryCreditReset();
 	double queryCredit(PhyCore*);
+	bool setCredit(PhyCore*, double);
 	double consumeCredit(PhyCore*, double);
 	double waitIO();	
 	vcoreStatus queryStatus();
@@ -75,6 +81,7 @@ private:
 	unsigned int vid;
 	unsigned int expectedWorkload;
 	vcoreStatus status;
+	double speedUp;
 	std::deque<inputWorkload*> input_workload_seq;
 	std::deque<double> working_seq;
 	std::deque<double> waiting_seq;
