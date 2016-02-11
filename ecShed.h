@@ -4,11 +4,15 @@
 #include<map>
 #include<String>
 
+#include <assert.h>
+
 #define N_BIGCORE	2
 #define N_LITCORE	4
-#define N_VIRCORE	10
+#define N_VIRCORE	1
+#define T_OBSERVE	5
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
+#define C_ROUNDWORK	200
 #define C_MAGICNUM	100
 
 #define THRESHOLD	900*4
@@ -24,7 +28,7 @@ class PhyCore;
 struct inputWorkload{
 	unsigned int expWorkload;
 	std::deque<unsigned int> working;
-	std::deque<unsigned int> waiting;
+	std::deque<double> waiting;
 };
 struct coreCluster{
 	std::vector<PhyCore*> cores;
@@ -42,17 +46,6 @@ public:
 	double getTime();
 	eventType getType();
 	void getCore(PhyCore**, VirCore**);
-
-	friend bool operator<(Event a, Event b){
-		if(a.time != b.time){
-			// sort according to time, smaller first
-			return a.time < b.time;
-		}
-		else{
-			// same time, sort according to type
-			return a.type < b.type;
-		}
-	}
 private:
 	double time;
 	eventType type;
@@ -63,11 +56,13 @@ private:
 class VirCore{
 public:
 	VirCore(unsigned int);
+	void readInput(std::string);
 	unsigned int getID();
 	double getSpeedUp();
-	void readInput(std::string);
+	void setCore(PhyCore*);
+	PhyCore* currentCore();
 	unsigned int getExpWorkload();
-	double getWorkload();
+	double peekWorkload();
 	double exeWorkload(double);	
 	double queryCreditReset();
 	double queryCredit(PhyCore*);
@@ -79,9 +74,10 @@ public:
 	PhyCore* coreWCredit();
 private:
 	unsigned int vid;
-	unsigned int expectedWorkload;
+	double expectedWorkload;
 	vcoreStatus status;
 	double speedUp;
+	PhyCore* onCore;
 	std::deque<inputWorkload*> input_workload_seq;
 	std::deque<double> working_seq;
 	std::deque<double> waiting_seq;
@@ -115,3 +111,6 @@ private:
 	std::deque<VirCore*> runQueue;
 };
 
+struct eventOrder{
+    bool operator()(Event*, Event*);
+};

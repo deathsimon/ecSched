@@ -1,4 +1,4 @@
-#include "Simulator.h"
+#include "ecShed.h"
 
 extern std::vector<Event*> eventQ;
 extern std::vector<VirCore*> virtualCores;
@@ -11,7 +11,8 @@ extern void genSchedPlan();
 
 bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
 	// locate v in source;
-	if(!source->removeFromRunQ(v)){
+	if(source != NULL &&
+		!source->removeFromRunQ(v)){
 		return false;
 	}
 
@@ -29,7 +30,11 @@ bool execVcore(PhyCore* p, VirCore* v){
 	Event* newEvent;
 	double exeTime = t_sync - t_now;
 	double creditTime = v->queryCredit(p) / C_MAGICNUM;
-	double workTime = v->getWorkload() / p->getFreq();
+	double workTime = 0.0;
+	
+	if(p->getFreq() > 0){
+		workTime = v->peekWorkload() / p->getFreq();
+	}
 
 	if(creditTime < exeTime){
 		exeTime = creditTime;
@@ -41,7 +46,7 @@ bool execVcore(PhyCore* p, VirCore* v){
 	// create an event for the virtual core and push into event queue
 	newEvent = new Event(t_now + exeTime, t_yield, p, v);
 	eventQ.push_back(newEvent);
-	std::push_heap(eventQ.begin(), eventQ.end());
+	std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
 
 	if(!p->startExe(t_now)){
 		return false;
@@ -69,8 +74,9 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 		if(workloadRemain == 0){
 			// waiting for I/O
 			waitFor = v->waitIO();
-			if(waitFor < 0){
-				return false;
+			if(waitFor <= 0){
+				// no workload, wait until have workloads
+				goto find_next;
 			}			
 		}
 		else{
@@ -90,7 +96,7 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 		// create a resume event for the virtual core and push into event queue
 		newEvent = new Event(t_now + waitFor, t_resume, p, v);
 		eventQ.push_back(newEvent);
-		std::push_heap(eventQ.begin(), eventQ.end());
+		std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
 	}
 	else{
 		// no credit		
@@ -113,11 +119,11 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 				// create a resume event for the virtual core and push into event queue
 				newEvent = new Event(t_now + waitFor, t_resume, targetCore, v);
 				eventQ.push_back(newEvent);
-				std::push_heap(eventQ.begin(), eventQ.end());
+				std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
 			}
 		}		
 	}
-
+find_next:
 	if(t_now != t_sync){
 		// find next virtual core for execution
 		nextVCore = p->findRunnable();
@@ -163,12 +169,11 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	return true;
 }
 
-bool EC_schedule_resume(PhyCore* p, VirCore* v){		
-	if(!v->changeStatus(vs_ready)){
-		// ignore: vs_ready -> vs_ready
-		if(v->queryStatus() != vs_ready){
-			return false;
-		}
+bool EC_schedule_resume(PhyCore* p, VirCore* v){
+	// change the virtual core to ready
+	if(v->queryStatus() != vs_ready 
+		&& !v->changeStatus(vs_ready)){
+			return false;		
 	}
 	if(p->peakRunQ() == v){
 		if(!execVcore(p, v)){
@@ -191,10 +196,37 @@ double calculatePower(coreCluster* cluster){
 	}
 	return power_consumption;
 }
+void checkVcore(){
+	PhyCore* source;
+	PhyCore* target;
+	VirCore* v;
+	for(int i = 1; i <= N_VIRCORE; i++){
+		v = virtualCores[i-1];
+		source = v->currentCore();
+		if(source != NULL
+			&& v->queryCredit(source) != 0.0){}
+		else{
+			target = v->coreWCredit();
+		}
+		if(target != NULL){
+			migrateVCore(v, source, target, false);
+		}
+	}	
+}
 void resumeCores(coreCluster* cluster, double now){
+	Event* newEvent;
+	PhyCore* currCore;
+	VirCore* vCore;
 	for(int i = 1; i <= cluster->amount; i++){
-		if(cluster->cores[i-1]->peakRunQ() != NULL)
-			cluster->cores[i-1]->startExe(t_now);
+		currCore = cluster->cores[i-1];
+		vCore = currCore->peakRunQ();
+		if(vCore != NULL
+			&& vCore->queryCredit(currCore) != 0.0){			
+			// create a resume event for the virtual core and push into event queue
+			newEvent = new Event(now, t_resume, currCore, vCore);
+			eventQ.push_back(newEvent);
+			std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
+		}		
 	}
 }
 
@@ -213,12 +245,15 @@ bool EC_sync(){
 	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){
-		credit_remains += virtualCores[i]->queryCreditReset();
+		credit_remains += virtualCores[i-1]->queryCreditReset();
 	}
 	fprintf(stdout, "Remaining credit at time %lf is :%lf\n", t_now, credit_remains);
 
 	// generate new scheduling plan
 	genSchedPlan();	
+
+	// check virtual cores
+	checkVcore();
 	
 	// resume cores for execution
 	resumeCores(&bigCores, t_now);

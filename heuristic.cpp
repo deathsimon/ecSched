@@ -1,4 +1,4 @@
-#include "Simulator.h"
+#include "ecShed.h"
 
 extern std::vector<Event*> eventQ;
 extern std::vector<VirCore*> virtualCores;
@@ -49,7 +49,9 @@ bool genPlan(vcoreGroup* vcores){
 			if(cluster->cores[targetCore-1]->getFreq() == 0){
 				freq = 0;
 				// condition 1
-				(vcoreUnit->w > vcores->vCore.front()->w)?(temp = vcoreUnit->w):(temp = vcores->vCore.front()->w);
+
+				(!vcores->vCore.empty() && vcoreUnit->w < vcores->vCore.front()->w)?
+					(temp = vcores->vCore.front()->w):(temp = vcoreUnit->w);
 				if(freq < temp){
 					freq = temp;
 				}				
@@ -63,8 +65,8 @@ bool genPlan(vcoreGroup* vcores){
 				if(freq < temp){
 					freq = temp;
 				}
-				// [TODO] adjust to one of the available frequency
-				unsigned int cand_freq;
+				// adjust to one of the available frequency
+				unsigned int cand_freq = 0;
 				for(int i = 0; i < (int)cluster->amountFreq ;i++){
 					if(freq <= cluster->avFreq[i]){
 						continue;
@@ -79,7 +81,7 @@ bool genPlan(vcoreGroup* vcores){
 			// Phase 2: distributed credits
 			freq = (double)cluster->cores[targetCore-1]->getFreq();
 
-			if(r > vcoreUnit->w){
+			if(r >= vcoreUnit->w){
 				a_ij = vcoreUnit->w / freq;
 				r -= vcoreUnit->w;
 				vcores->remainingWorkloads -= vcoreUnit->w;
@@ -110,7 +112,7 @@ void genSchedPlan(){
 	vcoreGroup groupBig;
 	
 	unit* vcoreUnit;	
-	double vcpuWorkload = 0.0;
+	unsigned int vcpuWorkload = 0;
 
 	groupLittle.vCore.clear();
 	groupLittle.remainingWorkloads = 0.0;
@@ -120,17 +122,20 @@ void genSchedPlan(){
 	groupBig.cluster = &bigCores;
 
 	for(int i = 1; i <= N_VIRCORE; i++){
-		vcoreUnit = new unit();
-		vcoreUnit->v = virtualCores[i];
-		vcpuWorkload = virtualCores[i]->getExpWorkload();
-		vcoreUnit->w = vcpuWorkload;
+		vcoreUnit = new unit();		
+		vcpuWorkload = virtualCores[i-1]->getExpWorkload();
+		if(vcpuWorkload == 0){
+			continue;
+		}
+		vcoreUnit->v = virtualCores[i-1];
+		vcoreUnit->w = (double)vcpuWorkload;
 		if(vcpuWorkload < littleCores.avFreq.front()){
 			groupLittle.vCore.push_back(vcoreUnit);
-			groupLittle.remainingWorkloads += vcpuWorkload;
+			groupLittle.remainingWorkloads += (double)vcpuWorkload;
 		}
 		else{
 			groupBig.vCore.push_back(vcoreUnit);
-			groupBig.remainingWorkloads += vcpuWorkload;		
+			groupBig.remainingWorkloads += (double)vcpuWorkload;		
 		}
 	}
 	std::make_heap(groupLittle.vCore.begin(), groupLittle.vCore.end(), cmp_speed);
