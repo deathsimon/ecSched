@@ -6,14 +6,14 @@
 Event::Event(){
 	time = 0.0;
 	type = t_interval;
-	p_core = 0;
-	v_core = 0;
+	p_core = NULL;
+	v_core = NULL;
 }
 Event::Event(double input_time, eventType input_type){
 	time = input_time;
 	type = input_type;
-	p_core = 0;
-	v_core = 0;
+	p_core = NULL;
+	v_core = NULL;
 }
 Event::Event(double input_time, eventType input_type, PhyCore* input_pcore, VirCore* input_vcore){
 	time = input_time;
@@ -113,7 +113,8 @@ unsigned int VirCore::getExpWorkload(){
 	}	
 	// round up the workload
 	if(expectedWorkload > 0){
-		expW = ((int)(expectedWorkload/C_ROUNDWORK)+1) * C_ROUNDWORK;
+		((int)expectedWorkload % C_ROUNDWORK == 0)?
+			(expW = (int)expectedWorkload):(expW = (int)(expectedWorkload + C_ROUNDWORK - ((int)expectedWorkload % C_ROUNDWORK)));
 	}
 
 	return expW;
@@ -148,10 +149,10 @@ double VirCore::queryCredit(PhyCore* p){
 	return credit_remain;
 }
 bool VirCore::setCredit(PhyCore* p, double credit){
-	if(energyCredit.find(p) != energyCredit.end()){
-		// not cleaned
-		return false;
-	}
+	bool cleaned = (energyCredit.find(p) == energyCredit.end());
+	// if not cleaned
+	assert(cleaned);
+
 	energyCredit[p] = credit;
 	if(status == vs_nocredit){
 		status = vs_ready;
@@ -261,7 +262,7 @@ bool PhyCore::startExe(double t){
 }
 void PhyCore::stopExe(double t){
 	if(!running){
-		fprintf(stderr, "[Error] stopExe: physical core %d was not running.\n", pid);
+		fprintf(stderr, "[Error] stopExe: physical core %d was not running on time %lf.\n", pid, t);
 		return;
 	}
 	run_time += (t - lastStart);
@@ -302,11 +303,6 @@ bool PhyCore::insertToRunQ(VirCore* v, queuePos pos){
 
 	return true;
 }
-VirCore* PhyCore::peakRunQ(){
-	if(runQueue.empty())
-		return NULL;
-	return runQueue.front();
-}
 bool PhyCore::removeFromRunQ(VirCore* v){
 	std::deque<VirCore*>::iterator target = runQueue.end();
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
@@ -326,17 +322,27 @@ bool PhyCore::removeFromRunQ(VirCore* v){
 }
 VirCore* PhyCore::findRunnable(){
 	VirCore* target = NULL;
+	VirCore* temp;
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
 		if((*it)->queryStatus() == vs_ready){
 			target = (*it);
 		}	
+	}
+	if(target != NULL){
+		// shift until target is in the front
+		while(runQueue.front() != target){
+			temp = runQueue.front();
+			runQueue.pop_front();
+			runQueue.push_back(temp);
+		};
 	}
 	return target;
 }
 VirCore* PhyCore::findRunnable(PhyCore* p){
 	VirCore* target = NULL;
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
-		if((*it)->queryStatus() == vs_ready
+		//if((*it)->queryStatus() == vs_ready
+		if((*it)->queryStatus() != vs_running
 			&& (*it)->queryCredit(p) != 0.0){
 			target = (*it);
 		}	
@@ -345,9 +351,11 @@ VirCore* PhyCore::findRunnable(PhyCore* p){
 }
 bool eventOrder::operator()(Event* a, Event* b){
 	if(a->getTime() != b->getTime()){
+		// earlier first
 		return a->getTime() > b->getTime();
 	}
 	else{
+		// if the same time, compare event type
 		return a->getType() > b->getType();
 	}		
 }

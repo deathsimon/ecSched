@@ -31,12 +31,15 @@ bool setupCoreCluster(coreCluster* cluster, std::string filename){
 	PhyCore* newPhyCore;
 	int amount = 0;
 	unsigned int freq;
+	double power;
 	
 	if(!fp){
+		fprintf(stderr, "[Error] Cannot open file %s.\n", filename.c_str());
 		return false;
 	}
 	cluster->cores.clear();
 	cluster->avFreq.clear();
+	cluster->busyPower.clear();
 	
 	// read amount of cores in the cluster from file
 	fscanf(fp, "%d", &amount);
@@ -47,12 +50,13 @@ bool setupCoreCluster(coreCluster* cluster, std::string filename){
 		cluster->cores.push_back(newPhyCore);
 	}
 
-	// read available frequencies from file
+	// read available frequencies and the corresponding busy power
 	fscanf(fp, "%d", &amount);
 	cluster->amountFreq = amount;
 	for(int i = 1; i <= amount; i++){
-		fscanf(fp, "%d", &freq);
+		fscanf(fp, "%d %lf", &freq, &power);
 		cluster->avFreq.push_back(freq);
+		cluster->busyPower[freq] = power;
 	}
 	fclose(fp);
 
@@ -60,6 +64,7 @@ bool setupCoreCluster(coreCluster* cluster, std::string filename){
 }
 
 int main(int argc, char* argv[]){
+	bool correct;
 
 	// set up event queue
     eventQ.clear();	
@@ -70,14 +75,16 @@ int main(int argc, char* argv[]){
 
 	// set up big and little core cluster
 	bigCores.type = c_big;
-	setupCoreCluster(&bigCores, "bigCore.txt");
+	correct = setupCoreCluster(&bigCores, "bigCore.txt");
 	littleCores.type = c_little;
-	setupCoreCluster(&littleCores, "littleCore.txt");	
+	correct &= setupCoreCluster(&littleCores, "littleCore.txt");
+
+	assert(correct);	// check if read core configurations correctly
 
 	// set up virtual cores
 	virtualCores.clear();
 	VirCore* newVirCore;
-	for(int i = 1; i <= N_VIRCORE; i++){
+	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] remove N_VIRCORE
 		newVirCore = new VirCore(i);
 		newVirCore->readInput("workload\\");		
 		virtualCores.push_back(newVirCore);

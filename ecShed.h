@@ -6,13 +6,11 @@
 
 #include <assert.h>
 
-#define N_BIGCORE	2
-#define N_LITCORE	4
-#define N_VIRCORE	1
+#define N_VIRCORE	3
 #define T_OBSERVE	5
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
-#define C_ROUNDWORK	200
+#define C_ROUNDWORK	50
 #define C_MAGICNUM	100
 
 #define THRESHOLD	900*4
@@ -36,6 +34,7 @@ struct coreCluster{
 	int amount;
 	unsigned int amountFreq;
 	std::vector<unsigned int> avFreq;
+	std::map<unsigned int, double> busyPower;
 };
 
 class Event{
@@ -96,8 +95,7 @@ public:
 	bool is_running();
 	double getLastStart();
 	double acquireLoad();
-	bool insertToRunQ(VirCore*, queuePos);
-	VirCore* peakRunQ();
+	bool insertToRunQ(VirCore*, queuePos);	
 	bool removeFromRunQ(VirCore*);	
 	VirCore* findRunnable();
 	VirCore* findRunnable(PhyCore*);
