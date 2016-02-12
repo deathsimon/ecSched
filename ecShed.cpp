@@ -292,7 +292,7 @@ bool PhyCore::insertToRunQ(VirCore* v, queuePos pos){
 	}
 	else{
 		std::deque<VirCore*>::iterator it;
-		for(it = runQueue.begin(); it != runQueue.begin(); ++it){
+		for(it = runQueue.begin(); it != runQueue.end(); ++it){
 			if((*it)->queryStatus() == vs_nocredit){
 				break;
 			}
@@ -326,6 +326,7 @@ VirCore* PhyCore::findRunnable(){
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
 		if((*it)->queryStatus() == vs_ready){
 			target = (*it);
+			break;
 		}	
 	}
 	if(target != NULL){

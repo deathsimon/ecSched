@@ -36,7 +36,7 @@ VirCore* workloadStealing(PhyCore* p){
 	
 	if(pid > 1){
 		// steal from the left
-		targetCore = targetCluster->cores[pid-1];
+		targetCore = targetCluster->cores[(pid-1)-1];
 		nextVCore = targetCore->findRunnable(p);
 		if(nextVCore != NULL){
 			// migrate the virtual core here
@@ -181,7 +181,9 @@ find_next:
 	}
 
 	// put the current virtual core to the run-queue of target core
-	migrateVCore(v, p, p, false);
+	if(targetCore != NULL){
+		migrateVCore(v, p, targetCore, false);
+	}
 		
 	return true;
 }
@@ -196,9 +198,10 @@ bool EC_schedule_resume(PhyCore* p, VirCore* v){
 			return false;		
 	}
 	if(!currCore->is_running()){
-		tmp = currCore->findRunnable();		
+		//tmp = currCore->findRunnable();		
 
-		if(!execVcore(currCore, tmp)){
+		if(!execVcore(currCore, v)){
+		//if(!execVcore(currCore, tmp)){
 			return false;
 		}
 	}
@@ -234,7 +237,7 @@ double calculatePower(coreCluster* cluster){
 }
 void checkVcore(){
 	PhyCore* source;
-	PhyCore* target;
+	PhyCore* target = NULL;
 	VirCore* v;
 	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] replace this
 		v = virtualCores[i-1];		
@@ -253,7 +256,8 @@ void resumeCores(coreCluster* cluster, double now){
 	Event* newEvent;
 	PhyCore* currCore;
 	VirCore* vCore;
-	for(int i = 1; i <= cluster->amount; i++){
+	for(int i = cluster->amount; i > 0; i--){
+		// start from the last physical core
 		currCore = cluster->cores[i-1];
 		if(currCore->getFreq() != 0){			
 			vCore = currCore->findRunnable();
