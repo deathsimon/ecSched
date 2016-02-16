@@ -103,6 +103,8 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	Event* newEvent;
 	double waitFor = 0.0;	
 
+	p->stopExe(t_now);
+
 	if(credit_remain > 0.0){		
 		if(workloadRemain == 0){
 			// waiting for I/O
@@ -174,10 +176,7 @@ find_next:
 				return false;
 			}			
 		}
-		else{
-			// idle the physical core
-			p->stopExe(t_now);
-		}
+		// idle the physical core		
 	}
 
 	// put the current virtual core to the run-queue of target core

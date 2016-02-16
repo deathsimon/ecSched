@@ -11,7 +11,7 @@
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
 #define C_ROUNDWORK	50
-#define C_MAGICNUM	100
+#define C_MAGICNUM	5000
 
 #define THRESHOLD	900*4
 
