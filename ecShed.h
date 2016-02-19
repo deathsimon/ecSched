@@ -6,12 +6,13 @@
 
 #include <assert.h>
 
-#define N_VIRCORE	3
-#define T_OBSERVE	5
+#define N_VIRCORE	1
+#define T_OBSERVE	90
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
 #define C_ROUNDWORK	50
-#define C_MAGICNUM	5000
+#define C_MAGICNUM	1000
+#define MIN_WORK	0.00001
 
 #define THRESHOLD	900*4
 

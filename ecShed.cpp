@@ -1,4 +1,5 @@
 #include<sstream>
+#include<cmath>
 
 #include "ecShed.h"
 
@@ -72,7 +73,9 @@ void VirCore::readInput(std::string dirName){
 		while(pairs > 0){
 			fscanf(fp, "%d %lf", &tempL, &tempW);
 			newInput->working.push_back(tempL);
-			newInput->waiting.push_back(tempW);
+			if(tempW > 0.0){
+				newInput->waiting.push_back(tempW);
+			}
 			pairs--;		
 		};
 		input_workload_seq.push_back(newInput);
@@ -94,6 +97,7 @@ PhyCore* VirCore::currentCore(){
 }
 unsigned int VirCore::getExpWorkload(){	
 	unsigned int expW = 0;
+	bool hasWorkloadLeft = (expectedWorkload != 0);
 	if(!input_workload_seq.empty()){
 		// get the set of workload for the next interval
 		inputWorkload* newInput = input_workload_seq.front();
@@ -110,11 +114,22 @@ unsigned int VirCore::getExpWorkload(){
 			newInput->waiting.pop_front();
 		};
 		delete newInput;
+
+		if(hasWorkloadLeft){
+			double workloadLeft = working_seq.front();
+			working_seq.pop_front();
+			working_seq[0] += workloadLeft;
+		}
+		else{
+			if(queryStatus() == vs_waiting){
+				changeStatus(vs_ready);
+			}
+		}
 	}	
 	// round up the workload
 	if(expectedWorkload > 0){
-		((int)expectedWorkload % C_ROUNDWORK == 0)?
-			(expW = (int)expectedWorkload):(expW = (int)(expectedWorkload + C_ROUNDWORK - ((int)expectedWorkload % C_ROUNDWORK)));
+		((int)ceil(expectedWorkload) % C_ROUNDWORK == 0)?
+			(expW = (int)ceil(expectedWorkload)):(expW = (int)(ceil(expectedWorkload) + C_ROUNDWORK - ((int)ceil(expectedWorkload) % C_ROUNDWORK)));
 	}
 
 	return expW;
@@ -127,7 +142,10 @@ double VirCore::peekWorkload(){
 double VirCore::exeWorkload(double w){
 	expectedWorkload -= w;
 	working_seq[0] -= w;
-	if(working_seq.front() <= 0){
+	if(working_seq.front() < MIN_WORK){
+		// should be <= 0
+		// set a min workload to avoid problem caused by precision of floating point/double
+		expectedWorkload -= working_seq.front();
 		working_seq.pop_front();
 		return 0.0;
 	}
@@ -172,9 +190,9 @@ double VirCore::waitIO(){
 	// return the amount of time waiting for I/O
 	double result = -1;
 	if(changeStatus(vs_waiting)
-		&& !waiting_seq.empty()){
-		result = waiting_seq.front();
-		waiting_seq.pop_front();
+		&& !waiting_seq.empty()){			
+			result = waiting_seq.front();
+			waiting_seq.pop_front();
 	}
 	return result;
 }
