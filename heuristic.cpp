@@ -133,11 +133,14 @@ void genSchedPlan(){
 		vcoreUnit->w = (double)vcpuWorkload;
 		if(vcpuWorkload <= littleCores.avFreq.front()){
 			groupLittle.vCore.push_back(vcoreUnit);
-			groupLittle.remainingWorkloads += (double)vcpuWorkload;
+			groupLittle.remainingWorkloads += vcoreUnit->w;
 		}
 		else{
+			/* big core speed up */
+			vcoreUnit->w /= virtualCores[i-1]->getSpeedUp();
+
 			groupBig.vCore.push_back(vcoreUnit);
-			groupBig.remainingWorkloads += (double)vcpuWorkload;		
+			groupBig.remainingWorkloads += vcoreUnit->w;
 		}
 	}
 	// make max heap according to their speed up
@@ -153,6 +156,9 @@ void genSchedPlan(){
 		groupLittle.remainingWorkloads -= vcoreUnit->w;
 
 		// insert into big core group
+		/* big core speed up */
+		vcoreUnit->w /= vcoreUnit->v->getSpeedUp();
+
 		groupBig.vCore.push_back(vcoreUnit);		
 		groupBig.remainingWorkloads += vcoreUnit->w;
 	};

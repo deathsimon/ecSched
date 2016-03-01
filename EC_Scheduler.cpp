@@ -11,9 +11,8 @@ extern void genSchedPlan();
 
 bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
 	// locate v in source;
-	if(source != NULL &&
-		!source->removeFromRunQ(v)){
-		return false;
+	if(source != NULL){
+		assert(source->removeFromRunQ(v));
 	}
 
 	//insertToRunQ
@@ -67,6 +66,10 @@ bool execVcore(PhyCore* p, VirCore* v){
 	
 	if(p->getFreq() > 0){
 		workTime = v->peekWorkload() / p->getFreq();
+		/* big core speed up */
+		if(p->getType() == c_big){
+			workTime /= v->getSpeedUp();
+		}
 	}
 
 	if(creditTime < exeTime){
@@ -95,6 +98,10 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 	double executionTime = t_now - p->getLastStart();
 
 	double workloadProcessed = executionTime*p->getFreq();
+	/* big core speed up */
+	if(p->getType() == c_big){
+		workloadProcessed *= v->getSpeedUp();
+	}
 	double workloadRemain = v->exeWorkload(workloadProcessed);
 
 	double creditConsumed = executionTime*C_MAGICNUM;
@@ -280,6 +287,7 @@ void resumeCores(coreCluster* cluster, double now){
 bool EC_sync(){
 	double power_consumption = 0.0;
 	double credit_remains = 0.0;
+	int hasWork;
 
 	fprintf(stdout, "%.1lf\t", t_now);
 
@@ -294,7 +302,9 @@ bool EC_sync(){
 	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){
-		credit_remains += virtualCores[i-1]->queryCreditReset();
+		(virtualCores[i-1]->peekWorkload() == 0.0)?
+			(hasWork = 0):(hasWork = 1);
+		credit_remains += (virtualCores[i-1]->queryCreditReset() * hasWork);
 	}
 	fprintf(stdout, "%lf\n", credit_remains);
 

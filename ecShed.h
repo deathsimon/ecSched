@@ -14,6 +14,8 @@
 #define C_MAGICNUM	1000
 #define MIN_WORK	0.00001
 
+#define DIR_NAME	"workload\\"
+
 #define THRESHOLD	900*4
 
 enum eventType{t_yield = 1, t_interval, t_resume};

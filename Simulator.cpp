@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
 	VirCore* newVirCore;
 	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] remove N_VIRCORE
 		newVirCore = new VirCore(i);
-		newVirCore->readInput("workload\\");		
+		newVirCore->readInput(DIR_NAME);		
 		virtualCores.push_back(newVirCore);
 	}
 

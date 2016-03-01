@@ -97,7 +97,7 @@ PhyCore* VirCore::currentCore(){
 }
 unsigned int VirCore::getExpWorkload(){	
 	unsigned int expW = 0;
-	bool hasWorkloadLeft = (expectedWorkload != 0);
+	bool hasWorkloadLeft = (!working_seq.empty());
 	if(!input_workload_seq.empty()){
 		// get the set of workload for the next interval
 		inputWorkload* newInput = input_workload_seq.front();
@@ -140,13 +140,16 @@ double VirCore::peekWorkload(){
 	return 0.0;
 }
 double VirCore::exeWorkload(double w){
+	double tmp = 0.0;
 	expectedWorkload -= w;
 	working_seq[0] -= w;
 	if(working_seq.front() < MIN_WORK){
 		// should be <= 0
 		// set a min workload to avoid problem caused by precision of floating point/double
-		expectedWorkload -= working_seq.front();
+		tmp = working_seq.front();		
 		working_seq.pop_front();
+		(working_seq.empty())?
+			(expectedWorkload = 0.0):(expectedWorkload -= tmp);
 		return 0.0;
 	}
 	return working_seq.front();
