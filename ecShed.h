@@ -6,6 +6,11 @@
 
 #include <assert.h>
 
+#define ECBS
+#ifndef ECBS
+	#define GTS
+#endif
+
 #define N_VIRCORE	1
 #define T_OBSERVE	90
 #define T_PERIOD	1
@@ -66,14 +71,14 @@ public:
 	unsigned int getExpWorkload();
 	double peekWorkload();
 	double exeWorkload(double);	
-	double queryCreditReset();
-	double queryCredit(PhyCore*);
-	bool setCredit(PhyCore*, double);
-	double consumeCredit(PhyCore*, double);
+	//double queryCreditReset();
+	//double queryCredit(PhyCore*);
+	//bool setCredit(PhyCore*, double);
+	//double consumeCredit(PhyCore*, double);
 	double waitIO();	
 	vcoreStatus queryStatus();
 	bool changeStatus(vcoreStatus);
-	PhyCore* coreWCredit();
+	//PhyCore* coreWCredit();
 private:
 	unsigned int vid;
 	double expectedWorkload;
@@ -83,6 +88,17 @@ private:
 	std::deque<inputWorkload*> input_workload_seq;
 	std::deque<double> working_seq;
 	std::deque<double> waiting_seq;
+};
+
+class ECVirCore: public VirCore{
+public:
+	ECVirCore(unsigned int);
+	double queryCreditReset();
+	double queryCredit(PhyCore*);
+	bool setCredit(PhyCore*, double);
+	double consumeCredit(PhyCore*, double);
+	PhyCore* coreWCredit();
+private:
 	std::map<PhyCore*, double> energyCredit;
 };
 

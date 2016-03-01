@@ -58,7 +58,7 @@ VirCore* workloadStealing(PhyCore* p){
 
 	return nextVCore;
 }
-bool execVcore(PhyCore* p, VirCore* v){
+bool execVcore(PhyCore* p, ECVirCore* v){
 	Event* newEvent;
 	double exeTime = t_sync - t_now;
 	double creditTime = v->queryCredit(p) / C_MAGICNUM;
@@ -90,10 +90,10 @@ bool execVcore(PhyCore* p, VirCore* v){
 	return true;
 }
 
-bool EC_schedule_next(PhyCore* p, VirCore* v){
+bool EC_schedule_next(PhyCore* p, ECVirCore* v){
 
 	PhyCore* targetCore = p;
-	VirCore* nextVCore;
+	ECVirCore* nextVCore;
 	
 	double executionTime = t_now - p->getLastStart();
 
@@ -168,12 +168,12 @@ bool EC_schedule_next(PhyCore* p, VirCore* v){
 find_next:
 	if(t_now != t_sync){
 		// find next virtual core for execution
-		nextVCore = p->findRunnable();		
+		nextVCore = (ECVirCore*)p->findRunnable();		
 		
 		if(nextVCore == NULL){
 			// cannot find runnable from the run queue,
 			// try to steal workload from neighbors
-			nextVCore = workloadStealing(p);
+			nextVCore = (ECVirCore*)workloadStealing(p);
 		}
 
 		if(nextVCore != NULL
@@ -194,20 +194,16 @@ find_next:
 	return true;
 }
 
-bool EC_schedule_resume(PhyCore* p, VirCore* v){
+bool EC_schedule_resume(PhyCore* p, ECVirCore* v){
 	PhyCore* currCore = v->currentCore();
-	VirCore* tmp;
-
+	
 	// change the virtual core to ready
 	if(v->queryStatus() != vs_ready 
 		&& !v->changeStatus(vs_ready)){
 			return false;		
 	}
-	if(!currCore->is_running()){
-		//tmp = currCore->findRunnable();		
-
+	if(!currCore->is_running()){		
 		if(!execVcore(currCore, v)){
-		//if(!execVcore(currCore, tmp)){
 			return false;
 		}
 	}
@@ -244,9 +240,9 @@ double calculatePower(coreCluster* cluster){
 void checkVcore(){
 	PhyCore* source;
 	PhyCore* target = NULL;
-	VirCore* v;
+	ECVirCore* v;
 	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] replace this
-		v = virtualCores[i-1];		
+		v = (ECVirCore*)virtualCores[i-1];		
 		source = v->currentCore();
 		if(source != NULL
 			&& v->queryCredit(source) != 0.0){}
@@ -288,6 +284,7 @@ bool EC_sync(){
 	double power_consumption = 0.0;
 	double credit_remains = 0.0;
 	int hasWork;
+	ECVirCore* v;
 
 	fprintf(stdout, "%.1lf\t", t_now);
 
@@ -304,7 +301,8 @@ bool EC_sync(){
 	for(int i = 1; i <= N_VIRCORE; i++){
 		(virtualCores[i-1]->peekWorkload() == 0.0)?
 			(hasWork = 0):(hasWork = 1);
-		credit_remains += (virtualCores[i-1]->queryCreditReset() * hasWork);
+		v = (ECVirCore*)virtualCores[i-1];
+		credit_remains += (v->queryCreditReset() * hasWork);
 	}
 	fprintf(stdout, "%lf\n", credit_remains);
 

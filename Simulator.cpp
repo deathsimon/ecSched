@@ -16,13 +16,19 @@ extern bool EC_schedule_resume(PhyCore*, VirCore*);
 extern bool EC_sync();
 
 bool schedule_next(PhyCore* p, VirCore* v){
+#ifdef ECBS
 	return EC_schedule_next(p, v);
+#endif
 }
 bool schedule_resume(PhyCore* p, VirCore* v){
+#ifdef ECBS
 	return EC_schedule_resume(p, v);
+#endif
 }
 bool sync(){
+#ifdef ECBS
 	return EC_sync();
+#endif
 }
 
 bool setupCoreCluster(coreCluster* cluster, std::string filename){
@@ -83,9 +89,15 @@ int main(int argc, char* argv[]){
 
 	// set up virtual cores
 	virtualCores.clear();
+
 	VirCore* newVirCore;
+
 	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] remove N_VIRCORE
+#ifdef ECBS
+		newVirCore = new ECVirCore(i);
+#else
 		newVirCore = new VirCore(i);
+#endif
 		newVirCore->readInput(DIR_NAME);		
 		virtualCores.push_back(newVirCore);
 	}

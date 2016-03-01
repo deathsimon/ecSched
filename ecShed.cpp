@@ -41,8 +41,7 @@ VirCore::VirCore(unsigned int id){
 	onCore = NULL;
 	input_workload_seq.clear();
 	working_seq.clear();
-	waiting_seq.clear();
-	energyCredit.clear();
+	waiting_seq.clear();	
 }
 void VirCore::readInput(std::string dirName){	
 	std::ostringstream tmpStr;
@@ -154,41 +153,6 @@ double VirCore::exeWorkload(double w){
 	}
 	return working_seq.front();
 }
-double VirCore::queryCreditReset(){
-	double credit_remain = 0.0;
-	for(std::map<PhyCore*, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
-		credit_remain += it->second;
-	}
-	energyCredit.clear();
-	return credit_remain;
-}
-double VirCore::queryCredit(PhyCore* p){
-	double credit_remain = 0.0;
-	if(energyCredit.find(p) != energyCredit.end()){
-		credit_remain = energyCredit[p];
-	}
-	return credit_remain;
-}
-bool VirCore::setCredit(PhyCore* p, double credit){
-	bool cleaned = (energyCredit.find(p) == energyCredit.end());
-	// if not cleaned
-	assert(cleaned);
-
-	energyCredit[p] = credit;
-	if(status == vs_nocredit){
-		status = vs_ready;
-	}
-	return true;
-}
-double VirCore::consumeCredit(PhyCore* pid, double c){
-	energyCredit[pid] -= c;
-	if(energyCredit[pid] == 0.0){
-		energyCredit.erase(pid);
-		status = vs_nocredit;
-		return 0.0;
-	}
-	return energyCredit[pid];
-}
 double VirCore::waitIO(){
 	// return the amount of time waiting for I/O
 	double result = -1;
@@ -243,7 +207,47 @@ bool VirCore::changeStatus(vcoreStatus newStatus){
 	}
 	return result;
 }
-PhyCore* VirCore::coreWCredit(){
+
+/* Class ECVirCore */
+ECVirCore::ECVirCore(unsigned int id) : VirCore(id){
+	energyCredit.clear();
+}
+double ECVirCore::queryCreditReset(){
+	double credit_remain = 0.0;
+	for(std::map<PhyCore*, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
+		credit_remain += it->second;
+	}
+	energyCredit.clear();
+	return credit_remain;
+}
+double ECVirCore::queryCredit(PhyCore* p){
+	double credit_remain = 0.0;
+	if(energyCredit.find(p) != energyCredit.end()){
+		credit_remain = energyCredit[p];
+	}
+	return credit_remain;
+}
+bool ECVirCore::setCredit(PhyCore* p, double credit){
+	bool cleaned = (energyCredit.find(p) == energyCredit.end());
+	// if not cleaned
+	assert(cleaned);
+
+	energyCredit[p] = credit;
+	if(queryStatus() == vs_nocredit){
+		assert(changeStatus(vs_ready));
+	}
+	return true;
+}
+double ECVirCore::consumeCredit(PhyCore* pid, double c){
+	energyCredit[pid] -= c;
+	if(energyCredit[pid] == 0.0){
+		energyCredit.erase(pid);
+		changeStatus(vs_nocredit);
+		return 0.0;
+	}
+	return energyCredit[pid];
+}
+PhyCore* ECVirCore::coreWCredit(){
 	// return a physical core this virtual core has credits on
 	PhyCore* pid = NULL;
 	for(std::map<PhyCore*, double>::iterator it = energyCredit.begin(); it != energyCredit.end(); ++it){
@@ -254,6 +258,7 @@ PhyCore* VirCore::coreWCredit(){
 	}
 	return pid;
 }
+
 /* Class PhyCore */
 PhyCore::PhyCore(coreType t, unsigned int id){
 	pid = id;
