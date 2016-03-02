@@ -6,7 +6,7 @@ extern coreCluster bigCores;
 extern coreCluster littleCores;
 
 struct unit{
-	VirCore* v;
+	ECVirCore* v;
 	double w;	
 };
 struct vcoreGroup{
@@ -129,7 +129,7 @@ void genSchedPlan(){
 		if(vcpuWorkload == 0){
 			continue;
 		}
-		vcoreUnit->v = virtualCores[i-1];
+		vcoreUnit->v = (ECVirCore*)virtualCores[i-1];
 		vcoreUnit->w = (double)vcpuWorkload;
 		if(vcpuWorkload <= littleCores.avFreq.front()){
 			groupLittle.vCore.push_back(vcoreUnit);

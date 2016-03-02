@@ -11,18 +11,18 @@ coreCluster littleCores;
 double t_now = 0;
 double t_sync = t_now;
 
-extern bool EC_schedule_next(PhyCore*, VirCore*);
-extern bool EC_schedule_resume(PhyCore*, VirCore*);
+extern bool EC_schedule_next(PhyCore*, ECVirCore*);
+extern bool EC_schedule_resume(PhyCore*, ECVirCore*);
 extern bool EC_sync();
 
 bool schedule_next(PhyCore* p, VirCore* v){
 #ifdef ECBS
-	return EC_schedule_next(p, v);
+	return EC_schedule_next(p, (ECVirCore*)v);
 #endif
 }
 bool schedule_resume(PhyCore* p, VirCore* v){
 #ifdef ECBS
-	return EC_schedule_resume(p, v);
+	return EC_schedule_resume(p, (ECVirCore*)v);
 #endif
 }
 bool sync(){

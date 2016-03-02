@@ -369,9 +369,15 @@ VirCore* PhyCore::findRunnable(PhyCore* p){
 	VirCore* target = NULL;
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
 		//if((*it)->queryStatus() == vs_ready
-		if((*it)->queryStatus() != vs_running
-			&& (*it)->queryCredit(p) != 0.0){
+		if((*it)->queryStatus() != vs_running){
+#ifdef ECBS
+			if(((ECVirCore*)(*it))->queryCredit(p) != 0.0){
+				target = (*it);
+			}
+#else
+			// [TODO]
 			target = (*it);
+#endif
 		}	
 	}
 	return target;
