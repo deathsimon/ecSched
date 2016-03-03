@@ -223,7 +223,8 @@ double calculatePower(coreCluster* cluster){
 	double bPower;
 	for(int i = 1; i <= cluster->amount; i++){
 		freq = cluster->cores[i-1]->getFreq();
-		load = cluster->cores[i-1]->acquireLoad();
+		load = cluster->cores[i-1]->getLoad();
+		cluster->cores[i-1]->resetLoad();
 		fprintf(stdout, "%d %.3lf ", freq, load);
 		if(freq != 0){
 			bPower = cluster->busyPower[freq];

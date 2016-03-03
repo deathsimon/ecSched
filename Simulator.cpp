@@ -19,15 +19,24 @@ bool schedule_next(PhyCore* p, VirCore* v){
 #ifdef ECBS
 	return EC_schedule_next(p, (ECVirCore*)v);
 #endif
+#ifdef GTS
+	return GTS_schedule_next(p, (GTSVirCore*)v);
+#endif
 }
 bool schedule_resume(PhyCore* p, VirCore* v){
 #ifdef ECBS
 	return EC_schedule_resume(p, (ECVirCore*)v);
 #endif
+#ifdef GTS
+	return GTS_schedule_resume(p, (GTSVirCore*)v);
+#endif
 }
 bool sync(){
 #ifdef ECBS
 	return EC_sync();
+#endif
+#ifdef GTS
+	return GTS_sync();
 #endif
 }
 
@@ -96,7 +105,7 @@ int main(int argc, char* argv[]){
 #ifdef ECBS
 		newVirCore = new ECVirCore(i);
 #else
-		newVirCore = new VirCore(i);
+		newVirCore = new GTSVirCore(i);
 #endif
 		newVirCore->readInput(DIR_NAME);		
 		virtualCores.push_back(newVirCore);

@@ -71,14 +71,9 @@ public:
 	unsigned int getExpWorkload();
 	double peekWorkload();
 	double exeWorkload(double);	
-	//double queryCreditReset();
-	//double queryCredit(PhyCore*);
-	//bool setCredit(PhyCore*, double);
-	//double consumeCredit(PhyCore*, double);
 	double waitIO();	
 	vcoreStatus queryStatus();
 	bool changeStatus(vcoreStatus);
-	//PhyCore* coreWCredit();
 private:
 	unsigned int vid;
 	double expectedWorkload;
@@ -102,6 +97,20 @@ private:
 	std::map<PhyCore*, double> energyCredit;
 };
 
+class GTSVirCore: public VirCore{
+public:
+	GTSVirCore(unsigned int);
+	void incAvgLoad(double);
+	double getAvgLoad();
+	void start(double);
+	void stop(double);
+	double getVirTime();
+private:
+	double avgLoad;
+	double virTime;
+	double lastStart;
+};
+
 class PhyCore{
 public:
 	PhyCore(coreType, unsigned int);
@@ -113,7 +122,8 @@ public:
 	void stopExe(double);
 	bool is_running();
 	double getLastStart();
-	double acquireLoad();
+	void resetLoad();
+	double getLoad();
 	bool insertToRunQ(VirCore*, queuePos);	
 	bool removeFromRunQ(VirCore*);	
 	VirCore* findRunnable();

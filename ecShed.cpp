@@ -259,6 +259,27 @@ PhyCore* ECVirCore::coreWCredit(){
 	return pid;
 }
 
+/* Class GTSVirCore */
+GTSVirCore::GTSVirCore(unsigned int id): VirCore(id){
+	avgLoad = 0;
+	virTime = 0;
+}
+void GTSVirCore::incAvgLoad(double w){
+	// [TODO]
+}
+double GTSVirCore::getAvgLoad(){
+	return avgLoad;
+}
+void GTSVirCore::start(double t){
+	lastStart = t;
+}
+void GTSVirCore::stop(double t){
+	virTime += (t - lastStart);
+};
+double GTSVirCore::getVirTime(){
+	return virTime;
+}
+
 /* Class PhyCore */
 PhyCore::PhyCore(coreType t, unsigned int id){
 	pid = id;
@@ -303,10 +324,11 @@ double PhyCore::getLastStart(){
 	}
 	return -1;
 }
-double PhyCore::acquireLoad(){
-	double result = run_time/T_PERIOD;
+void PhyCore::resetLoad(){
 	run_time = 0.0;
-	return result;
+}	
+double PhyCore::getLoad(){
+	return run_time/T_PERIOD;
 }
 bool PhyCore::insertToRunQ(VirCore* v, queuePos pos){
 
