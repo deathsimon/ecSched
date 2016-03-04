@@ -68,7 +68,7 @@ bool genPlan(vcoreGroup* vcores){
 				// adjust to one of the available frequency
 				// init to the least frequency
 				unsigned int cand_freq = cluster->avFreq[cluster->amountFreq-1];
-				for(int i = 0; i < (int)cluster->amountFreq ;i++){
+				for(int i = 1; i < (int)cluster->amountFreq ;i++){
 					if(freq <= cluster->avFreq[i]){
 						continue;
 					}

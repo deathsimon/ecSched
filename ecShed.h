@@ -11,17 +11,18 @@
 	#define GTS
 #endif
 
-#define N_VIRCORE	3//1
-#define T_OBSERVE	3//90
+#define N_VIRCORE	6 //1
+#define T_OBSERVE	600//90
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
 #define C_ROUNDWORK	50
 #define C_MAGICNUM	1000
 #define MIN_WORK	0.00001
+#define MIN_CREDIT	0.0001
 
-#define DIR_NAME	"test\\"//"workload\\"
+#define DIR_NAME	"workload\\"
 
-#define THRESHOLD	900*4
+#define THRESHOLD	1200*4
 
 enum eventType{t_yield = 1, t_interval, t_resume};
 enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};

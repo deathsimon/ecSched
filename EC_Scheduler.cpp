@@ -14,8 +14,7 @@ bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
 	if(source != NULL){
 		assert(source->removeFromRunQ(v));
 	}
-
-	//insertToRunQ
+	
 	queuePos pos;
 	if(steal){
 		pos = q_head;
@@ -125,6 +124,7 @@ bool EC_schedule_next(PhyCore* p, ECVirCore* v){
 			targetCore = NULL;
 			if(t_now == t_sync){
 				// sync point
+				v->changeStatus(vs_ready);	// vs_running -> vs_ready
 				waitFor = 0;
 			}
 			else{
@@ -198,11 +198,11 @@ bool EC_schedule_resume(PhyCore* p, ECVirCore* v){
 	PhyCore* currCore = v->currentCore();
 	
 	// change the virtual core to ready
-	if(v->queryStatus() != vs_ready 
-		&& !v->changeStatus(vs_ready)){
-			return false;		
+	if(v->queryStatus() != vs_ready){ 
+		assert(v->changeStatus(vs_ready));			
 	}
-	if(!currCore->is_running()){		
+	if(!currCore->is_running()
+		&& (ECVirCore*)currCore->findRunnable() == v){		
 		if(!execVcore(currCore, v)){
 			return false;
 		}
@@ -251,7 +251,9 @@ void checkVcore(){
 		v = (ECVirCore*)virtualCores[i-1];		
 		source = v->currentCore();
 		if(source != NULL
-			&& v->queryCredit(source) != 0.0){}
+			&& v->queryCredit(source) != 0.0){
+			target = NULL;
+		}
 		else{
 			target = v->coreWCredit();
 		}

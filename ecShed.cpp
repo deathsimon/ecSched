@@ -121,7 +121,7 @@ unsigned int VirCore::getExpWorkload(){
 		}
 		else{
 			if(queryStatus() == vs_waiting){
-				changeStatus(vs_ready);
+				changeStatus(vs_ready);		// vs_waiting -> vs_ready
 			}
 		}
 	}	
@@ -156,7 +156,7 @@ double VirCore::exeWorkload(double w){
 double VirCore::waitIO(){
 	// return the amount of time waiting for I/O
 	double result = -1;
-	if(changeStatus(vs_waiting)
+	if(changeStatus(vs_waiting)				// vs_running -> vs_waiting
 		&& !waiting_seq.empty()){			
 			result = waiting_seq.front();
 			waiting_seq.pop_front();
@@ -234,15 +234,15 @@ bool ECVirCore::setCredit(PhyCore* p, double credit){
 
 	energyCredit[p] = credit;
 	if(queryStatus() == vs_nocredit){
-		assert(changeStatus(vs_ready));
+		assert(changeStatus(vs_ready));		// vs_nocredit -> vs_ready
 	}
 	return true;
 }
 double ECVirCore::consumeCredit(PhyCore* pid, double c){
 	energyCredit[pid] -= c;
-	if(energyCredit[pid] == 0.0){
+	if(energyCredit[pid] < MIN_CREDIT){
 		energyCredit.erase(pid);
-		changeStatus(vs_nocredit);
+		changeStatus(vs_nocredit);	// vs_running -> vs_nocredit
 		return 0.0;
 	}
 	return energyCredit[pid];
@@ -308,7 +308,7 @@ bool PhyCore::startExe(double t){
 	lastStart = t;
 	running = true;
 #ifdef ECBS
-	return runQueue.front()->changeStatus(vs_running);
+	return runQueue.front()->changeStatus(vs_running);	// vs_ready -> vs_running
 #else
 	return true;
 #endif
@@ -376,20 +376,26 @@ bool PhyCore::removeFromRunQ(VirCore* v){
 }
 VirCore* PhyCore::findRunnable(){
 	VirCore* target = NULL;
-	VirCore* temp;
-	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
+	std::deque<VirCore*>::iterator it;
+	//VirCore* temp;
+	
+	for(it = runQueue.begin(); it != runQueue.end(); ++it){
 		if((*it)->queryStatus() == vs_ready){
 			target = (*it);
 			break;
 		}	
 	}
 	if(target != NULL){
-		// shift until target is in the front
+		// move target to the front
+		runQueue.erase(it);
+		runQueue.push_front(target);
+		/*
 		while(runQueue.front() != target){
 			temp = runQueue.front();
 			runQueue.pop_front();
 			runQueue.push_back(temp);
 		};
+		*/
 	}
 	return target;
 }
