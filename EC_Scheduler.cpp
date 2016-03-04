@@ -224,7 +224,7 @@ double calculatePower(coreCluster* cluster){
 	for(int i = 1; i <= cluster->amount; i++){
 		freq = cluster->cores[i-1]->getFreq();
 		load = cluster->cores[i-1]->getLoad();
-		cluster->cores[i-1]->resetLoad();
+		//cluster->cores[i-1]->resetLoad();
 		fprintf(stdout, "%d %.3lf ", freq, load);
 		if(freq != 0){
 			bPower = cluster->busyPower[freq];
@@ -237,6 +237,11 @@ double calculatePower(coreCluster* cluster){
 		}
 	}
 	return power_consumption;
+}
+void resetLoad(coreCluster* cluster){
+	for(int i = 1; i <= cluster->amount; i++){
+		cluster->cores[i-1]->resetLoad();
+	}
 }
 void checkVcore(){
 	PhyCore* source;
@@ -297,6 +302,10 @@ bool EC_sync(){
 	power_consumption += calculatePower(&bigCores);
 	power_consumption += calculatePower(&littleCores);
 	fprintf(stdout, "\t%lf\t", power_consumption);
+
+	// reset load
+	resetLoad(&bigCores);
+	resetLoad(&littleCores);
 	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){

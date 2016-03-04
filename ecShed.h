@@ -6,20 +6,20 @@
 
 #include <assert.h>
 
-#define ECBS
+//#define ECBS
 #ifndef ECBS
 	#define GTS
 #endif
 
-#define N_VIRCORE	1
-#define T_OBSERVE	90
+#define N_VIRCORE	3//1
+#define T_OBSERVE	3//90
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
 #define C_ROUNDWORK	50
 #define C_MAGICNUM	1000
 #define MIN_WORK	0.00001
 
-#define DIR_NAME	"workload\\"
+#define DIR_NAME	"test\\"//"workload\\"
 
 #define THRESHOLD	900*4
 
@@ -100,7 +100,7 @@ private:
 class GTSVirCore: public VirCore{
 public:
 	GTSVirCore(unsigned int);
-	void incAvgLoad(double);
+	void incAvgLoad(double, double);
 	double getAvgLoad();
 	void start(double);
 	void stop(double);

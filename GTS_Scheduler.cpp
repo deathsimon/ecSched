@@ -1,8 +1,9 @@
 #include "ecShed.h"
 
-#define	T_SLICE_MS	30
+#define	T_SLICE_MS	50
 #define L_HIGH		0.85
 #define L_LOW		0.3
+#define	W_RATIO		0
 
 extern std::vector<Event*> eventQ;
 extern std::vector<VirCore*> virtualCores;
@@ -10,6 +11,10 @@ extern coreCluster bigCores;
 extern coreCluster littleCores;
 extern double t_now;
 extern double t_sync;
+
+extern void stopCores(coreCluster* cluster, double now);
+extern double calculatePower(coreCluster* cluster);
+extern void resetLoad(coreCluster* cluster);
 
 std::vector<GTSVirCore*> bigRTtree;
 std::vector<GTSVirCore*> littleRTtree;
@@ -46,8 +51,8 @@ bool execVcore(PhyCore* p, GTSVirCore* v){
 	double exeTime;		
 	double workTime = 0.0;
 
-	((t_sync - t_now) > T_SLICE_MS/1000)?		// 30ms 
-		(exeTime = T_SLICE_MS/1000):(exeTime = t_sync - t_now);
+	((t_sync - t_now) > (double)T_SLICE_MS/1000)?		// ms 
+		(exeTime = (double)T_SLICE_MS/1000):(exeTime = t_sync - t_now);
 	
 	if(p->getFreq() > 0){
 		workTime = v->peekWorkload() / p->getFreq();
@@ -68,6 +73,9 @@ bool execVcore(PhyCore* p, GTSVirCore* v){
 
 	if(!p->startExe(t_now)){
 		return false;
+	}
+	else{
+		assert(v->changeStatus(vs_running));
 	}
 	return true;
 }
@@ -159,7 +167,11 @@ void resumeCores(coreCluster* cluster){
 			&& vCore->queryStatus() == vs_ready){
 				vCore->setCore(currCore);
 				execVcore(currCore, vCore);
-		}			
+		}
+
+		if(tree->empty()){
+			break;
+		}
 	}
 }
 
@@ -167,6 +179,10 @@ bool GTS_schedule_resume(GTSVirCore* v){
 
 	std::vector<GTSVirCore*>* tree = &bigRTtree;
 	coreCluster* cluster = &bigCores;
+
+	if(v->peekWorkload() == 0.0){
+		return true;
+	}
 		
 	// change the virtual core to ready
 	if(v->queryStatus() != vs_ready){
@@ -185,52 +201,18 @@ bool GTS_schedule_resume(GTSVirCore* v){
 	
 	return true;
 }
-extern void stopCores(coreCluster* cluster, double now);
-/*
-void stopCores(coreCluster* cluster, double now){
-	for(int i = 1; i <= cluster->amount ; i++){
-		if(cluster->cores[i-1]->is_running()){
-			cluster->cores[i-1]->stopExe(now);
-		}
-	}
-}
-*/
-double calculatePower(coreCluster* cluster);
-/*
-double calculatePower(coreCluster* cluster){
-	double power_consumption = 0.0;
-	unsigned int freq;
-	double load;
-	double bPower;
-	for(int i = 1; i <= cluster->amount; i++){
-		freq = cluster->cores[i-1]->getFreq();
-		load = cluster->cores[i-1]->getLoad();
-		fprintf(stdout, "%d %.3lf ", freq, load);
-		if(freq != 0){
-			bPower = cluster->busyPower[freq];
-			power_consumption += (load * bPower);
-		}
-		else{
-			if(load != 0){
-				fprintf(stderr,"[Error] Core %d has no frequency but with load.\n", i);
-			}
-		}
-	}
-	return power_consumption;
-}
-*/
 void GTS_checkVcore(){
 	PhyCore* source;
 	PhyCore* target = NULL;
-	VirCore* v;
+	GTSVirCore* v;
 	double vcpuWorkload;
 
 	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] replace this
-		v = virtualCores[i-1];
+		v = (GTSVirCore*)virtualCores[i-1];
 		vcpuWorkload = v->getExpWorkload();
 
 		// update the load of each virtual core
-		// [TODO]		
+		v->incAvgLoad(W_RATIO, vcpuWorkload);
 	}	
 }
 void dvfsCores(coreCluster* cluster){
@@ -288,6 +270,10 @@ bool GTS_sync(){
 	}
 	fprintf(stdout, "%lf\n", workload_remains);
 
+	// check virtual cores
+	GTS_checkVcore();
+
+	// set core frequency
 	if(t_now != 0){
 		// adjust core frequency
 		dvfsCores(&bigCores);
@@ -300,10 +286,21 @@ bool GTS_sync(){
 		
 		bigRTtree.clear();
 		littleRTtree.clear();
+
+		Event* newEvent;
+		PhyCore* p = NULL;
+		for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] replace this
+			// create resume events for all virtual cores
+			v = (GTSVirCore*)virtualCores[i-1];
+			newEvent = new Event(t_now, t_resume, p, v);
+			eventQ.push_back(newEvent);
+			std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
+		}		
 	}
 
-	// check virtual cores
-	GTS_checkVcore();
+	// reset load
+	resetLoad(&bigCores);
+	resetLoad(&littleCores);
 
 	// resume cores for execution
 	//resumeCores(&bigCores, t_now);

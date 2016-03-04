@@ -261,11 +261,13 @@ PhyCore* ECVirCore::coreWCredit(){
 
 /* Class GTSVirCore */
 GTSVirCore::GTSVirCore(unsigned int id): VirCore(id){
+	changeStatus(vs_ready);
 	avgLoad = 0;
 	virTime = 0;
 }
-void GTSVirCore::incAvgLoad(double w){
-	// [TODO]
+void GTSVirCore::incAvgLoad(double r, double w){
+	avgLoad *= r;
+	avgLoad += w;	
 }
 double GTSVirCore::getAvgLoad(){
 	return avgLoad;
@@ -305,7 +307,11 @@ unsigned int PhyCore::getFreq(){
 bool PhyCore::startExe(double t){
 	lastStart = t;
 	running = true;
+#ifdef ECBS
 	return runQueue.front()->changeStatus(vs_running);
+#else
+	return true;
+#endif
 }
 void PhyCore::stopExe(double t){
 	if(!running){
@@ -392,14 +398,9 @@ VirCore* PhyCore::findRunnable(PhyCore* p){
 	for(std::deque<VirCore*>::iterator it = runQueue.begin(); it != runQueue.end(); ++it){
 		//if((*it)->queryStatus() == vs_ready
 		if((*it)->queryStatus() != vs_running){
-#ifdef ECBS
 			if(((ECVirCore*)(*it))->queryCredit(p) != 0.0){
 				target = (*it);
 			}
-#else
-			// [TODO]
-			target = (*it);
-#endif
 		}	
 	}
 	return target;

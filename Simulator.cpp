@@ -11,34 +11,37 @@ coreCluster littleCores;
 double t_now = 0;
 double t_sync = t_now;
 
+#ifdef ECBS
 extern bool EC_schedule_next(PhyCore*, ECVirCore*);
 extern bool EC_schedule_resume(PhyCore*, ECVirCore*);
 extern bool EC_sync();
 
 bool schedule_next(PhyCore* p, VirCore* v){
-#ifdef ECBS
 	return EC_schedule_next(p, (ECVirCore*)v);
-#endif
-#ifdef GTS
-	return GTS_schedule_next(p, (GTSVirCore*)v);
-#endif
 }
 bool schedule_resume(PhyCore* p, VirCore* v){
-#ifdef ECBS
 	return EC_schedule_resume(p, (ECVirCore*)v);
-#endif
-#ifdef GTS
-	return GTS_schedule_resume(p, (GTSVirCore*)v);
-#endif
 }
 bool sync(){
-#ifdef ECBS
 	return EC_sync();
-#endif
-#ifdef GTS
-	return GTS_sync();
-#endif
 }
+#endif
+
+#ifdef GTS
+extern bool GTS_schedule_next(PhyCore*, GTSVirCore*);
+extern bool GTS_schedule_resume(GTSVirCore*);
+extern bool GTS_sync();
+
+bool schedule_next(PhyCore* p, VirCore* v){
+	return GTS_schedule_next(p, (GTSVirCore*)v);
+}
+bool schedule_resume(PhyCore* p, VirCore* v){
+	return GTS_schedule_resume((GTSVirCore*)v);
+}
+bool sync(){
+	return GTS_sync();
+}
+#endif
 
 bool setupCoreCluster(coreCluster* cluster, std::string filename){
 	
