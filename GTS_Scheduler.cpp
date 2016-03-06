@@ -103,6 +103,7 @@ bool GTS_schedule_next(PhyCore* p, GTSVirCore* v){
 
 	if(workloadRemain == 0){
 		// waiting for I/O
+		assert(v->changeStatus(vs_waiting));	// vs_running -> vs_waiting
 		waitFor = v->waitIO();
 		if(waitFor <= 0){
 			// no workload, wait until next sync point

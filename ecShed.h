@@ -6,12 +6,12 @@
 
 #include <assert.h>
 
-//#define ECBS
+#define ECBS
 #ifndef ECBS
 	#define GTS
 #endif
 
-#define N_VIRCORE	6 //1
+#define N_VIRCORE	10 //1
 #define T_OBSERVE	600//90
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05

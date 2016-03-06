@@ -114,6 +114,7 @@ bool EC_schedule_next(PhyCore* p, ECVirCore* v){
 	if(credit_remain > 0.0){		
 		if(workloadRemain == 0){
 			// waiting for I/O
+			assert(v->changeStatus(vs_waiting));	// vs_running -> vs_waiting
 			waitFor = v->waitIO();
 			if(waitFor <= 0){
 				// no workload, wait until have workloads
@@ -125,7 +126,8 @@ bool EC_schedule_next(PhyCore* p, ECVirCore* v){
 			if(t_now == t_sync){
 				// sync point
 				v->changeStatus(vs_ready);	// vs_running -> vs_ready
-				waitFor = 0;
+				//waitFor = 0;
+				goto find_next;
 			}
 			else{
 				// being interrupt
@@ -151,12 +153,13 @@ bool EC_schedule_next(PhyCore* p, ECVirCore* v){
 				// stay in this core
 				targetCore = p;
 			}
-			else{				
-				if(workloadRemain == 0){
+			else{
+				if(workloadRemain <= 0){
 					waitFor = v->waitIO();
 					if(waitFor < 0){
-						return false;
-					}			
+						// no workload, wait until have workloads
+						goto find_next;						
+					}				
 				}
 				// create a resume event for the virtual core and push into event queue
 				newEvent = new Event(t_now + waitFor, t_resume, targetCore, v);

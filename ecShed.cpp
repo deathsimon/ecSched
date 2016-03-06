@@ -155,11 +155,10 @@ double VirCore::exeWorkload(double w){
 }
 double VirCore::waitIO(){
 	// return the amount of time waiting for I/O
-	double result = -1;
-	if(changeStatus(vs_waiting)				// vs_running -> vs_waiting
-		&& !waiting_seq.empty()){			
-			result = waiting_seq.front();
-			waiting_seq.pop_front();
+	double result = -1;	
+	if(!waiting_seq.empty()){			
+		result = waiting_seq.front();
+		waiting_seq.pop_front();
 	}
 	return result;
 }
