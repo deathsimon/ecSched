@@ -6,9 +6,16 @@
 
 #include <assert.h>
 
-#define ECBS
+//#define ECBS
 #ifndef ECBS
 	#define GTS
+#endif
+
+#ifdef GTS
+	#define GOV_CONS
+	#ifndef GOV_CONS
+		#define GOV_PERF
+	#endif
 #endif
 
 #define N_VIRCORE	10 //1

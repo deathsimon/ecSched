@@ -12,6 +12,8 @@ extern coreCluster littleCores;
 extern double t_now;
 extern double t_sync;
 
+extern FILE* fout;
+
 extern void stopCores(coreCluster* cluster, double now);
 extern double calculatePower(coreCluster* cluster);
 extern void resetLoad(coreCluster* cluster);
@@ -226,6 +228,7 @@ void dvfsCores(coreCluster* cluster){
 		currFreq = currCore->getFreq();
 		load = currCore->getLoad();
 
+#ifdef GOV_CONS
 		if(load >= L_HIGH){
 			for(int j = 1; j < (int)cluster->amountFreq ;j++){
 				if(currFreq == cluster->avFreq[j]){
@@ -238,6 +241,9 @@ void dvfsCores(coreCluster* cluster){
 			unsigned int m = (int)cluster->amountFreq;
 			currCore->setFreq(cluster->avFreq[m-1]);
 		}
+#else
+		currCore->setFreq(cluster->avFreq[0]);
+#endif
 
 		currCore->resetLoad();
 	}
@@ -252,6 +258,7 @@ void initFreq(coreCluster* cluster){
 bool GTS_sync(){
 	double power_consumption = 0.0;	
 	double workload_remains = 0.0;	
+	unsigned int hasWork = 0;
 	VirCore* v;
 
 	fprintf(stdout, "%.1lf\t", t_now);
@@ -264,12 +271,17 @@ bool GTS_sync(){
 	power_consumption += calculatePower(&bigCores);
 	power_consumption += calculatePower(&littleCores);
 	fprintf(stdout, "\t%lf\t", power_consumption);
+	fprintf(fout, "\t%lf\t", power_consumption);
 	
 	// get remaining works
 	for(int i = 1; i <= N_VIRCORE; i++){
-		workload_remains += virtualCores[i-1]->peekWorkload();
+		if(virtualCores[i-1]->peekWorkload() > 0.0){
+			hasWork++;
+			workload_remains += virtualCores[i-1]->peekWorkload();
+		}
 	}
-	fprintf(stdout, "%lf\n", workload_remains);
+	fprintf(stdout, "%d\t%lf\n", hasWork, workload_remains);
+	fprintf(fout, "%d\t%lf\n", hasWork, workload_remains);
 
 	// check virtual cores
 	GTS_checkVcore();

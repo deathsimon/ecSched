@@ -11,6 +11,8 @@ coreCluster littleCores;
 double t_now = 0;
 double t_sync = t_now;
 
+FILE* fout;
+
 #ifdef ECBS
 extern bool EC_schedule_next(PhyCore*, ECVirCore*);
 extern bool EC_schedule_resume(PhyCore*, ECVirCore*);
@@ -114,9 +116,12 @@ int main(int argc, char* argv[]){
 		virtualCores.push_back(newVirCore);
 	}
 
+	// set up output file
+	fout = fopen("..\\result", "w");
+
 	// simulation
 	Event* currEvent;	
-	while(t_now < T_OBSERVE){
+	while(t_now <= T_OBSERVE){
 
 		assert(!eventQ.empty());
 
@@ -159,6 +164,7 @@ int main(int argc, char* argv[]){
 	};
     
 	// output results
+	fclose(fout);
 
 	return 0;
 }

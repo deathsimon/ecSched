@@ -7,6 +7,8 @@ extern coreCluster littleCores;
 extern double t_now;
 extern double t_sync;
 
+extern FILE* fout;
+
 extern void genSchedPlan();
 
 bool migrateVCore(VirCore* v, PhyCore* source, PhyCore* dest, bool steal){
@@ -229,6 +231,7 @@ double calculatePower(coreCluster* cluster){
 		load = cluster->cores[i-1]->getLoad();
 		//cluster->cores[i-1]->resetLoad();
 		fprintf(stdout, "%d %.3lf ", freq, load);
+		fprintf(fout, "%d %.3lf ", freq, load);
 		if(freq != 0){
 			bPower = cluster->busyPower[freq];
 			power_consumption += (load * bPower);
@@ -293,11 +296,12 @@ void resumeCores(coreCluster* cluster, double now){
 
 bool EC_sync(){
 	double power_consumption = 0.0;
-	double credit_remains = 0.0;
-	int hasWork;
+	double workload_remains = 0.0;
+	unsigned int hasWork = 0;
 	ECVirCore* v;
 
 	fprintf(stdout, "%.1lf\t", t_now);
+	fprintf(fout, "%.1lf\t", t_now);
 
 	// Stop running cores first
 	stopCores(&bigCores, t_now);
@@ -314,12 +318,15 @@ bool EC_sync(){
 	
 	// get remaining credits
 	for(int i = 1; i <= N_VIRCORE; i++){
-		(virtualCores[i-1]->peekWorkload() == 0.0)?
-			(hasWork = 0):(hasWork = 1);
 		v = (ECVirCore*)virtualCores[i-1];
-		credit_remains += (v->queryCreditReset() * hasWork);
+		if(v->peekWorkload() > 0.0){
+			hasWork++;
+			workload_remains += v->peekWorkload();
+		}
+		v->queryCreditReset();
 	}
-	fprintf(stdout, "%lf\n", credit_remains);
+	fprintf(stdout, "%d\t%lf\n", hasWork, workload_remains);
+	fprintf(fout, "%d\t%lf\n", hasWork, workload_remains);
 
 	// generate new scheduling plan
 	genSchedPlan();	
