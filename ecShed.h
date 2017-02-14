@@ -6,7 +6,7 @@
 
 #include <assert.h>
 
-//#define ECBS
+#define ECBS
 #ifndef ECBS
 	#define GTS
 #endif
@@ -18,8 +18,8 @@
 	#endif
 #endif
 
-#define N_VIRCORE	10 //1
-#define T_OBSERVE	600//90
+#define N_VIRCORE	20 //1
+#define T_OBSERVE	1 //600
 #define T_PERIOD	1
 #define T_INTERRUPT 0.05
 #define C_ROUNDWORK	50
@@ -27,7 +27,7 @@
 #define MIN_WORK	0.00001
 #define MIN_CREDIT	0.0001
 
-#define DIR_NAME	"workload\\"
+#define DIR_NAME	"large\\"//"workload\\"
 
 #define THRESHOLD	1200*4
 

@@ -1,4 +1,5 @@
 #include "ecShed.h"
+#include<ctime>
 
 extern std::vector<Event*> eventQ;
 extern std::vector<VirCore*> virtualCores;
@@ -170,6 +171,15 @@ void genSchedPlan(){
 		std::make_heap(groupLittle.vCore.begin(), groupLittle.vCore.end(), cmp_weight);
 	}
 
+	clock_t	t;
+	t = clock();
 	genPlan(&groupLittle);
+	t = clock() - t;
+	printf("clicks: %d, time:%f\t",t, ((float)t)/CLOCKS_PER_SEC);
+	t = clock();
 	genPlan(&groupBig);
+	t = clock() - t;
+	printf("clicks: %d, time:%f\n",t, ((float)t)/CLOCKS_PER_SEC);
+
+	return;
 }

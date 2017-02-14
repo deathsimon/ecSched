@@ -194,7 +194,8 @@ bool GTS_schedule_resume(GTSVirCore* v){
 
 	// insert back to tree accordin to avg load
 	// [LATER] fix threshold
-	if(v->getAvgLoad() < L_HIGH*littleCores.avFreq[0]){
+	//if(v->getAvgLoad() < L_HIGH*littleCores.avFreq[0]){
+	if(v->getAvgLoad() < littleCores.avFreq[0]){
 		tree = &littleRTtree;
 		cluster = &littleCores;
 	}		
@@ -262,6 +263,7 @@ bool GTS_sync(){
 	VirCore* v;
 
 	fprintf(stdout, "%.1lf\t", t_now);
+	fprintf(fout, "%.1lf\t", t_now);
 
 	// Stop running cores first
 	stopCores(&bigCores, t_now);

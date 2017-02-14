@@ -311,6 +311,7 @@ bool EC_sync(){
 	power_consumption += calculatePower(&bigCores);
 	power_consumption += calculatePower(&littleCores);
 	fprintf(stdout, "\t%lf\t", power_consumption);
+	fprintf(fout, "\t%lf\t", power_consumption);
 
 	// reset load
 	resetLoad(&bigCores);
