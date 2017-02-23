@@ -1,8 +1,16 @@
-#include<algorithm>
-#include<vector>
-#include<deque>
-#include<map>
-#include<String>
+#pragma once
+
+#include <cstdio>
+#include <cstring>
+#include <iostream>
+
+#include <list>
+#include <algorithm>
+#include <vector>
+#include <deque>
+#include <map>
+#include <String>
+#include <memory>
 
 #include <assert.h>
 
@@ -36,6 +44,11 @@ enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
 
+/* New Classes */
+class HMPPlatform;
+class Core;
+class Task;
+
 class VirCore;
 class PhyCore;
 
@@ -52,7 +65,7 @@ struct coreCluster{
 	std::vector<unsigned int> avFreq;
 	std::map<unsigned int, double> busyPower;
 };
-
+/*
 class Event{
 public:
 	Event();
@@ -67,6 +80,7 @@ private:
 	PhyCore* p_core;
 	VirCore* v_core;
 };
+*/
 
 class VirCore{
 public:
@@ -144,8 +158,4 @@ private:
 	bool running;
 	double run_time;
 	std::deque<VirCore*> runQueue;
-};
-
-struct eventOrder{
-    bool operator()(Event*, Event*);
 };
