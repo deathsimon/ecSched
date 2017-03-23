@@ -1,29 +1,46 @@
 #include "HMPPlatform.h"
 
+/*
+ * Initial the objects in HMPPlatform
+ */
 HMPPlatform::HMPPlatform() {
-	Configs newConfig;
-
 	coreClusters.clear();
+	eventQ.clear();	
+}
 
+void HMPPlatform::setup() {
+	/* First, try to setup the HMP platform according to the configuration file */
+	try {
+		setConfig();
+	}
+	catch (const std::exception& e) {
+		throw e;
+	}
+	/* Then setup the event queue */
+	setEventQ();
+}
+/* 
+ * Setup the HMP platform according to the configuration file 
+ */
+void HMPPlatform::setConfig() {
+	Configs newConfig;
 	try {
 		loadConfigs(&newConfig);
 
-		for (auto path : newConfig.path_of_cluster_config) {
+		for (auto path : newConfig.ClusterPath) {
 			setCoreCluster(path);
 		}
 
-		for (auto path : newConfig.path_of_task_config) {
+		for (auto path : newConfig.TaskPath) {
 			setTasks(path);
-		}		
+		}
 	}
-	catch (const std::exception& e) {		
+	catch (const std::exception& e) {
 		throw e;
-	}	
-	setEventQ();
+	}
 }
 
-void HMPPlatform::loadConfigs(Configs* config)
-{	
+void HMPPlatform::loadConfigs(Configs* config) {	
 	try	{
 		// TODO: load file
 	}
@@ -172,6 +189,6 @@ void HMPPlatform::addEvent(eventType type, double time) {
 	eventQ.insert(pos, newEvent);
 }
 
-bool cmp_time(const Event* &e, const double &t) {
+bool cmp_time(Event* &e, const double &t) {
 	return e->time > t;
 }
