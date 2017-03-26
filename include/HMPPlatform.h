@@ -5,6 +5,7 @@ typedef std::vector<Core*> CoreCluster;
 typedef std::deque<unsigned int> WorkloadSeq;
 
 struct Configs{	
+	unsigned int simuLength;
 	std::vector<std::string> ClusterPath;
 	std::vector<std::string> TaskPath;
 };
@@ -13,7 +14,6 @@ struct FreqPowerPair{
 	double power;
 };
 
-// TODO: enum eventType { e_check = 1, t_interval, e_endSimu };
 struct Event {
 	eventType type;
 	double	time;
@@ -34,8 +34,6 @@ private:
 	void loadConfigs(Configs*);	
 	void setCoreCluster(std::string);
 	void setTasks(std::string);
-
-	void setEventQ();
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;

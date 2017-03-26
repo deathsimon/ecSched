@@ -45,7 +45,9 @@ enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
 */
-enum eventType { t_yield = 1, t_interval, t_resume };
+//enum eventType { t_yield = 1, t_interval, t_resume };
+
+enum eventType {event_newTasks = 1, event_schedule, event_yield, event_resume, event_end};
 
 class HMPPlatform;
 class Core;

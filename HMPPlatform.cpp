@@ -26,8 +26,12 @@ void HMPPlatform::setup() {
 	catch (const std::exception& e) {
 		throw e;
 	}
-	/* Then setup the event queue */
-	setEventQ();
+
+	/* TODO: read the task arrving time from file */
+
+	/* Add starting and ending event to queue */
+	addEvent(event_newTasks, 0.0);
+	addEvent(event_end, newConfig.simuLength);
 }
 
 void HMPPlatform::loadConfigs(Configs* config) {	
@@ -117,33 +121,49 @@ void HMPPlatform::setTasks(std::string path) {
 	fp.close();
 }
 
-void HMPPlatform::setEventQ()
-{
-	eventQ.clear();
-	// TODO: add the first event	
+void HMPPlatform::addEvent(eventType type, double time) {
+	Event* newEvent = new Event;
+	newEvent->time = time;
+	newEvent->type = type;
 
-	// TODO: add the ending event
-	Event* myEvent = new Event(/*e_endSimu, end_time*/);
-	eventQ.push_back(myEvent);
+	auto pos = std::lower_bound(eventQ.begin(), eventQ.end(), time, cmp_time);
+
+	eventQ.insert(pos, newEvent);
+}
+bool cmp_time(Event* &e, const double &t) {
+	return e->time > t;
 }
 
 void HMPPlatform::run() {
 	/*
 	// set up output file
 	fout = fopen("..\\result", "w");
+	*/
 
-	// simulation
 	Event* currEvent;
-	while (!e_endSimu) {
 	
-	assert(!eventQ.empty());
+	while (!eventQ.empty()) {
+		currEvent = eventQ.front();
+		eventQ.pop_front();
 
-	// pop next
-	std::pop_heap(eventQ.begin(), eventQ.end(), eventOrder());
-	currEvent = eventQ.back();
-	eventQ.pop_back();
+		t_now = currEvent->time;
 
-	t_now = currEvent->getTime();
+		switch (currEvent->type) {
+		case event_newTasks:
+			// TODO: add new tasks to task queue 
+		case event_schedule:
+			// TODO: generate scheduling plan
+			break;
+		case event_yield:
+			break;
+		case event_resume:
+			break;
+		default:
+			break;
+		}
+
+	};
+	/*
 
 	PhyCore* curr_pCore;
 	VirCore* curr_vCore;
@@ -180,19 +200,4 @@ void HMPPlatform::run() {
 	fclose(fout);
 
 	*/
-}
-
-
-void HMPPlatform::addEvent(eventType type, double time) {
-	Event* newEvent = new Event;
-	newEvent->time = time;
-	newEvent->type = type;
-
-	auto pos = std::lower_bound(eventQ.begin(), eventQ.end(), time, cmp_time);
-
-	eventQ.insert(pos, newEvent);
-}
-
-bool cmp_time(Event* &e, const double &t) {
-	return e->time > t;
 }
