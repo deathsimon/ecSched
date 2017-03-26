@@ -5,24 +5,12 @@
  */
 HMPPlatform::HMPPlatform() {
 	coreClusters.clear();
-	eventQ.clear();	
+	eventQ.clear();
+	workloadCollection.clear();
 }
 
 void HMPPlatform::setup() {
-	/* First, try to setup the HMP platform according to the configuration file */
-	try {
-		setConfig();
-	}
-	catch (const std::exception& e) {
-		throw e;
-	}
-	/* Then setup the event queue */
-	setEventQ();
-}
-/* 
- * Setup the HMP platform according to the configuration file 
- */
-void HMPPlatform::setConfig() {
+	/* First, Setup the HMP platform according to the configuration file */
 	Configs newConfig;
 	try {
 		loadConfigs(&newConfig);
@@ -38,6 +26,8 @@ void HMPPlatform::setConfig() {
 	catch (const std::exception& e) {
 		throw e;
 	}
+	/* Then setup the event queue */
+	setEventQ();
 }
 
 void HMPPlatform::loadConfigs(Configs* config) {	
@@ -48,7 +38,13 @@ void HMPPlatform::loadConfigs(Configs* config) {
 		std::cout << "[Error] Fail while loading configurations" << std::endl;
 		throw e;
 	}
-	// TODO: setup configs
+	
+	config->ClusterPath.clear();
+	config->TaskPath.clear();
+
+	// TODO: parse configs and add paths according to configs
+	config->ClusterPath.push_back("");
+	config->TaskPath.push_back("");
 }
 
 void HMPPlatform::setCoreCluster(std::string path) {
@@ -66,28 +62,24 @@ void HMPPlatform::setCoreCluster(std::string path) {
 	// read amount of cores in the cluster from file
 	fscanf(fp, "%d", &numCores);
 
+	// read the Frequency-Power-Pair of the core
+	unsigned int numFPpair = 0;
+	fscanf(fp, "%ud", &numFPpair);
+	std::vector<FreqPowerPair*> coreFeatrue;
+	coreFeatrue.clear();
+	while (numFPpair > 0){
+		FreqPowerPair* newPair = new FreqPowerPair();
+		fscanf(fp, "%ud %lf", &newPair->frequency, &newPair->power);
+		coreFeatrue.push_back(newPair);
+		numFPpair--;
+	}
+
 	for (unsigned int i = 0; i < numCores; i++)	{
-		//TODO: newCore = new Core();
+		// TODO: create new cores 
+		// newCore = new Core();
+		// newCore.setFeature();
 		newCluster->push_back(newCore);
 	}
-
-
-	/*	
-	unsigned int freq;
-	double power;
-		
-	cluster->avFreq.clear();
-	cluster->busyPower.clear();		
-
-	// read available frequencies and the corresponding busy power
-	fscanf(fp, "%d", &amount);
-	cluster->amountFreq = amount;
-	for(int i = 1; i <= amount; i++){
-		fscanf(fp, "%d %lf", &freq, &power);
-		cluster->avFreq.push_back(freq);
-		cluster->busyPower[freq] = power;
-	}
-	*/
 
 	coreClusters.push_back(newCluster);
 
@@ -95,22 +87,34 @@ void HMPPlatform::setCoreCluster(std::string path) {
 }
 
 void HMPPlatform::setTasks(std::string path) {
-	/*
-	// set up virtual cores
-	virtualCores.clear();
 
-	VirCore* newVirCore;
-
-	for(int i = 1; i <= N_VIRCORE; i++){	// [TODO] remove N_VIRCORE
-	#ifdef ECBS
-	newVirCore = new ECVirCore(i);
-	#else
-	newVirCore = new GTSVirCore(i);
-	#endif
-	newVirCore->readInput(DIR_NAME);
-	virtualCores.push_back(newVirCore);
+	std::ifstream fp;
+	
+	try	{
+		fp.open(path.c_str(), std::ifstream::in);
 	}
-	*/
+	catch (const std::exception&){
+		throw "Fail to load config:" + path;
+	}
+
+	double speedup = 0.0;
+	fp >> speedup;
+
+	unsigned int length = 0;
+	fp >> length;
+
+	std::deque<unsigned int> newWorkload;
+	newWorkload.clear();
+
+	unsigned int reqCycles = 0;
+	for (std::string line; std::getline(fp, line);) {
+		reqCycles = std::stoi(line.substr(0, line.find_first_of(" ")));
+		newWorkload.push_back(reqCycles);
+	}
+
+	workloadCollection.push_back(&newWorkload);
+
+	fp.close();
 }
 
 void HMPPlatform::setEventQ()

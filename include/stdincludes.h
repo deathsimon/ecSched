@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <fstream>
 
 #include <list>
 #include <algorithm>
@@ -14,6 +15,7 @@
 
 #include <assert.h>
 
+/*
 #define ECBS
 #ifndef ECBS
 	#define GTS
@@ -39,16 +41,16 @@
 
 #define THRESHOLD	1200*4
 
-enum eventType{t_yield = 1, t_interval, t_resume};
 enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
+*/
+enum eventType { t_yield = 1, t_interval, t_resume };
 
-/* New Classes */
 class HMPPlatform;
 class Core;
 class Task;
-
+/*
 class VirCore;
 class PhyCore;
 
@@ -65,7 +67,6 @@ struct coreCluster{
 	std::vector<unsigned int> avFreq;
 	std::map<unsigned int, double> busyPower;
 };
-/*
 class Event{
 public:
 	Event();
@@ -80,7 +81,7 @@ private:
 	PhyCore* p_core;
 	VirCore* v_core;
 };
-*/
+
 
 class VirCore{
 public:
@@ -159,3 +160,4 @@ private:
 	double run_time;
 	std::deque<VirCore*> runQueue;
 };
+*/

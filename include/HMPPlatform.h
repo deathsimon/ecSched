@@ -2,10 +2,15 @@
 #include<stdincludes.h>
 
 typedef std::vector<Core*> CoreCluster;
+typedef std::deque<unsigned int> WorkloadSeq;
 
 struct Configs{	
 	std::vector<std::string> ClusterPath;
 	std::vector<std::string> TaskPath;
+};
+struct FreqPowerPair{
+	unsigned int frequency;
+	double power;
 };
 
 // TODO: enum eventType { e_check = 1, t_interval, e_endSimu };
@@ -26,7 +31,6 @@ protected:
 	void addEvent(eventType type, double time);
 
 private:
-	void setConfig();
 	void loadConfigs(Configs*);	
 	void setCoreCluster(std::string);
 	void setTasks(std::string);
@@ -35,6 +39,7 @@ private:
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;
+	std::vector<WorkloadSeq*> workloadCollection;
 
 	time_t t_now;	
 };
