@@ -150,7 +150,7 @@ void HMPPlatform::run() {
 
 		switch (currEvent->type) {
 		case event_newTasks:
-			// TODO: add new tasks to task queue 
+			// TODO: add new tasks to task queue
 		case event_schedule:
 			// TODO: generate scheduling plan
 			break;
