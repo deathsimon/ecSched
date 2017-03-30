@@ -5,27 +5,41 @@
 typedef unsigned int ReqCycles;
 typedef double EnergyCredit;
 
-
 class Core;
+
+struct TaskInfo{
+	std::string taskName;
+	TaskStatus status;
+	ReqCycles currReqCycles;
+};
 
 enum TaskStatus {
 	TS_ready = 1,
 	TS_running,
 	TS_waiting,
+	TS_blocked,
 	TS_ending
 };
 
 class Task {
 public:
 	Task();
+	Task(std::string);
 	~Task();
 
-	double getCurrReqCycles();
+	void assignWorkload(WorkloadSeq*);
+	void assignWorkload(WorkloadSeq*, double);
+
+	void getTaskInfo(TaskInfo&);
+
 	double fetchNxtReqCycles();
 
 	void execute();
+	void suspend();
 
 private:
+	std::string taskName;
+	WorkloadSeq* wSeq;
 	WorkloadSeq::iterator nxtReqCycles;
 	ReqCycles currReqCycles;
 	TaskStatus Status;
@@ -41,6 +55,7 @@ public:
 	bool hasECredit(Core*);
 
 	void execute();
+	void suspend();
 private:
 	std::map<Core*, EnergyCredit> ECredit;
 
