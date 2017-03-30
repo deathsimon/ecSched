@@ -39,5 +39,5 @@ private:
 	std::vector<CoreCluster*> coreClusters;
 	std::vector<WorkloadSeq*> workloadCollection;
 
-	time_t t_now;	
+	double t_now;	
 };
