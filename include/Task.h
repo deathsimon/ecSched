@@ -1,17 +1,10 @@
 #pragma once
 #include "stdincludes.h"
 #include "HMPPlatform.h"
+#include "Core.h"
 
 typedef unsigned int ReqCycles;
 typedef double EnergyCredit;
-
-class Core;
-
-struct TaskInfo{
-	std::string taskName;
-	TaskStatus status;
-	ReqCycles currReqCycles;
-};
 
 enum TaskStatus {
 	TS_ready = 1,
@@ -19,6 +12,13 @@ enum TaskStatus {
 	TS_waiting,
 	TS_blocked,
 	TS_ending
+};
+
+struct TaskInfo{
+	std::string taskName;
+	TaskStatus status;
+	ReqCycles currReqCycles;
+	TaskInfo() : taskName(""), status(TS_ready), currReqCycles(0) {};
 };
 
 class Task {
@@ -38,11 +38,9 @@ public:
 	void suspend();
 
 private:
-	std::string taskName;
+	TaskInfo Info;
 	WorkloadSeq* wSeq;
 	WorkloadSeq::iterator nxtReqCycles;
-	ReqCycles currReqCycles;
-	TaskStatus Status;
 	double startTime;
 };
 

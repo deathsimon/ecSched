@@ -2,14 +2,15 @@
 
 Task::Task() : Task::Task("") {};
 Task::Task(std::string name){
-	taskName = name;
+	Info.taskName = name;
+	Info.currReqCycles = 0;
+	Info.status = TS_ready;
+
 	wSeq = nullptr;
-	currReqCycles = 0;
-	Status = TS_ready;
 }
 
 Task::~Task(){
-	std::cout << "Task " << taskName << " has finished." << std::endl;
+	std::cout << "Task " << Info.taskName << " has finished." << std::endl;
 }
 
 void Task::assignWorkload(WorkloadSeq * seq){
@@ -25,9 +26,9 @@ void Task::assignWorkload(WorkloadSeq * seq, double speedUp) {
 /* Output the information of a task in batch.
  */
 void Task::getTaskInfo(TaskInfo & tInfo){
-	tInfo.taskName = taskName;
-	tInfo.status = Status;
-	tInfo.currReqCycles = currReqCycles;
+	tInfo.taskName = Info.taskName;
+	tInfo.status = Info.status;
+	tInfo.currReqCycles = Info.currReqCycles;
 }
 
 /* At the begin of every time interval,
@@ -37,17 +38,17 @@ void Task::getTaskInfo(TaskInfo & tInfo){
  */
 double Task::fetchNxtReqCycles(){
 	unsigned int cycles = (*nxtReqCycles);
-	currReqCycles += (double)cycles;
+	Info.currReqCycles += cycles;
 
 	nxtReqCycles++;
 	if (nxtReqCycles == wSeq->end()){
 		/* Reaching the end of the sequence
 		 * means that this task has finished.
 		 */
-		Status = TS_ending;
+		Info.status = TS_ending;
 	}
 
-	return currReqCycles;
+	return Info.currReqCycles;
 }
 
 void Task::execute() {
