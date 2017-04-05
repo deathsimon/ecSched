@@ -15,35 +15,39 @@ enum CoreStatus {
 };
 
 enum CoreType {
-	CT_big = 1,
-	CT_little
+	CT_little = 1,
+	CT_big
 };
 
 struct CoreInfo {
 	std::string coreName;
 	CoreType type;
 	CoreStatus status;
-	CoreInfo() : coreName(""), status(CS_ready) {};
+	unsigned int OperFrequency;
+	CoreInfo() : coreName(""), status(CS_ready), type(CT_little), OperFrequency(0) {};
 };
 
 class Core {
 public:
 	Core();
-	Core(std::string);
+	Core(std::string, CoreType);
 
 	void getCoreInfo(CoreInfo&);
 
 	void setFrequency(unsigned int);
-	unsigned int getFrequency();
 
+	void addTask(Task*);
+	
 	void resume(Time);
 	void interrupt(Time);
 	void pause(Time);
 
 private:
 	CoreInfo Info;
-	unsigned int OperFrequency;
 	Time busy;
 	double load;
 	runQueue rQueue;
+
+	Task* nextTask();
+
 };
