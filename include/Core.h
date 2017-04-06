@@ -4,6 +4,8 @@
 #include "HMPPlatform.h"
 #include "Task.h"
 
+extern HMPPlatform* simulator;
+
 typedef double Time;
 typedef std::deque<Task*> runQueue;
 
@@ -31,6 +33,7 @@ class Core {
 public:
 	Core();
 	Core(std::string, CoreType);
+	Core(std::string, CoreType, coreFeature*);
 
 	void getCoreInfo(CoreInfo&);
 
@@ -44,6 +47,8 @@ public:
 
 private:
 	CoreInfo Info;
+	coreFeature* feature;
+
 	Time busy;
 	double load;
 	runQueue rQueue;

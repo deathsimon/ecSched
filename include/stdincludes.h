@@ -49,9 +49,18 @@ enum queuePos{q_head = 1, q_FIFO, q_tail};
 
 enum eventType {event_newTasks = 1, event_schedule, event_yield, event_resume, event_end};
 
+struct FreqPowerPair {
+	unsigned int frequency;
+	double power;
+};
+
+typedef std::vector<FreqPowerPair*> coreFeature;
+typedef std::deque<unsigned int> WorkloadSeq;
+
 class HMPPlatform;
 class Core;
 class Task;
+
 /*
 class VirCore;
 class PhyCore;

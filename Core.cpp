@@ -1,10 +1,15 @@
 #include "Core.h"
 
-Core::Core() : Core::Core("", CT_little) {}
-Core::Core(std::string name, CoreType type){
+Core::Core() : Core::Core("", CT_little, new coreFeature()) {}
+Core::Core(std::string name, CoreType type) : Core::Core(name, type, new coreFeature()) {}
+Core::Core(std::string name, CoreType type, coreFeature* cFeature) {
 	Info.coreName = name;
 	Info.type = type;
 	Info.OperFrequency = 0;
+	Info.status = CS_idling;
+
+	feature = cFeature;
+
 	busy = 0.0;
 	load = 0.0;
 	rQueue.clear();
