@@ -27,10 +27,10 @@ void HMPPlatform::setup() {
 		throw e;
 	}
 
-	/* TODO: read the task arrving time from file */
+	/* Read the task arrving time from file */
+	setTaskArrival(newConfig.TaskArrivalPath);
 
-	/* Add starting and ending event to queue */
-	addEvent(event_newTasks, 0.0);
+	/* Add the ending event into queue */
 	addEvent(event_end, newConfig.simuLength);
 }
 
@@ -63,25 +63,27 @@ void HMPPlatform::setCoreCluster(std::string path) {
 	unsigned int numCores = 0;
 	Core* newCore = nullptr;
 	
+	/* TODO: get Core type */
+	// CoreType cType = ;
+
 	// read amount of cores in the cluster from file
 	fscanf(fp, "%d", &numCores);
 
 	// read the Frequency-Power-Pair of the core
 	unsigned int numFPpair = 0;
 	fscanf(fp, "%ud", &numFPpair);
-	std::vector<FreqPowerPair*> coreFeatrue;
-	coreFeatrue.clear();
+	coreFeature* cFeatrue = new coreFeature;
+	cFeatrue->clear();
 	while (numFPpair > 0){
 		FreqPowerPair* newPair = new FreqPowerPair();
 		fscanf(fp, "%ud %lf", &newPair->frequency, &newPair->power);
-		coreFeatrue.push_back(newPair);
+		cFeatrue->push_back(newPair);
 		numFPpair--;
 	}
 
 	for (unsigned int i = 0; i < numCores; i++)	{
 		// TODO: create new cores 
-		// newCore = new Core();
-		// newCore.setFeature();
+		// newCore = new Core("", cType, cFeatrue);
 		newCluster->push_back(newCore);
 	}
 
@@ -117,6 +119,18 @@ void HMPPlatform::setTasks(std::string path) {
 	}
 
 	workloadCollection.push_back(&newWorkload);
+
+	fp.close();
+}
+
+void HMPPlatform::setTaskArrival(std::string){
+
+	std::ifstream fp;
+
+	/* TODO:
+	 *	read the task arrival time,
+	 *	create arrival event and add into event queue;
+	 */
 
 	fp.close();
 }

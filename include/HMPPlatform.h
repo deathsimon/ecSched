@@ -1,17 +1,16 @@
 #pragma once
 #include<stdincludes.h>
 
+#include "Core.h"
+#include "Task.h"
+
 typedef std::vector<Core*> CoreCluster;
-typedef std::deque<unsigned int> WorkloadSeq;
 
 struct Configs{	
 	unsigned int simuLength;
 	std::vector<std::string> ClusterPath;
 	std::vector<std::string> TaskPath;
-};
-struct FreqPowerPair{
-	unsigned int frequency;
-	double power;
+	std::string TaskArrivalPath;
 };
 
 struct Event {
@@ -27,13 +26,13 @@ public:
 	void setup();
 	void run();	
 
-protected:
 	void addEvent(eventType type, double time);
 
 private:
 	void loadConfigs(Configs*);	
 	void setCoreCluster(std::string);
 	void setTasks(std::string);
+	void setTaskArrival(std::string);
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;
