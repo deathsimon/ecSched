@@ -7,36 +7,40 @@ HMPPlatform::HMPPlatform() {
 	coreClusters.clear();
 	eventQ.clear();
 	workloadCollection.clear();
+
+	t_now = 0;
 }
 
 void HMPPlatform::setup() {
-	/* First, Setup the HMP platform according to the configuration file */
 	Configs newConfig;
-	try {
-		loadConfigs(&newConfig);
 
+	try {
+		/* First, load the configuration file */
+		loadConfigs(&newConfig);
+		/* Setup the cores on the HMP platform according to configuration file */
 		for (auto path : newConfig.ClusterPath) {
 			setCoreCluster(path);
 		}
-
+		/* Setup the tasks according to configuration file */
 		for (auto path : newConfig.TaskPath) {
 			setTasks(path);
 		}
+		/* Read the task arrving time from file */
+		setTaskArrival(newConfig.TaskArrivalPath);
 	}
 	catch (const std::exception& e) {
 		throw e;
 	}
-
-	/* Read the task arrving time from file */
-	setTaskArrival(newConfig.TaskArrivalPath);
-
 	/* Add the ending event into queue */
 	addEvent(event_end, newConfig.simuLength);
 }
 
-void HMPPlatform::loadConfigs(Configs* config) {	
+void HMPPlatform::loadConfigs(Configs* config) {
+	
+	std::ifstream fp;
+
 	try	{
-		// TODO: load file
+		fp.open(PATH_CONFIG, std::ifstream::in);
 	}
 	catch (const std::exception& e) {
 		std::cout << "[Error] Fail while loading configurations" << std::endl;
@@ -49,6 +53,8 @@ void HMPPlatform::loadConfigs(Configs* config) {
 	// TODO: parse configs and add paths according to configs
 	config->ClusterPath.push_back("");
 	config->TaskPath.push_back("");
+
+	fp.close();
 }
 
 void HMPPlatform::setCoreCluster(std::string path) {
@@ -136,13 +142,28 @@ void HMPPlatform::setTaskArrival(std::string){
 }
 
 void HMPPlatform::addEvent(eventType type, double time) {
-	Event* newEvent = new Event;
-	newEvent->time = time;
-	newEvent->type = type;
+	Event* newEvent;
 
+	/* Find the (first) event with timestamp no lesser than time*/
 	auto pos = std::lower_bound(eventQ.begin(), eventQ.end(), time, cmp_time);
 
-	eventQ.insert(pos, newEvent);
+	if ((*pos)->time == time){
+		/* If target event has timestamp equal to time,
+		 * check for its event type. */
+		if ((*pos)->type < type) {
+			/* If smaller, replace it with the current type. */
+			(*pos)->type = type;
+		}
+	}
+	else {
+		/* If target event has timestamp larger than time, 
+		 * create a new event and insert to target position. */
+		newEvent = new Event;
+		newEvent->time = time;
+		newEvent->type = type;
+
+		eventQ.insert(pos, newEvent);
+	}
 }
 bool cmp_time(Event* &e, const double &t) {
 	return e->time > t;
@@ -150,7 +171,7 @@ bool cmp_time(Event* &e, const double &t) {
 
 void HMPPlatform::run() {
 	/*
-	// set up output file
+	// TODO: set up output file
 	fout = fopen("..\\result", "w");
 	*/
 
@@ -163,55 +184,24 @@ void HMPPlatform::run() {
 		t_now = currEvent->time;
 
 		switch (currEvent->type) {
-		case event_newTasks:
-			// TODO: add new tasks to task queue
-		case event_schedule:
-			// TODO: generate scheduling plan
+		case event_genSchedule:
+			// TODO: add new tasks to task queue and generate scheduling plan
 			break;
 		case event_yield:
+			// TODO:
 			break;
 		case event_resume:
+			// TODO:
 			break;
+		case event_end:
+			// TODO: 
+			eventQ.clear();
 		default:
 			break;
 		}
-
-	};
-	/*
-
-	PhyCore* curr_pCore;
-	VirCore* curr_vCore;
-	switch(currEvent->getType()){
-	case t_yield:
-	currEvent->getCore(&curr_pCore, &curr_vCore);
-	if(!schedule_next(curr_pCore, curr_vCore)){
-	// somethings wrong
-	return -1;
-	}
-	break;
-	case t_interval:
-	sync();
-
-	t_sync += T_PERIOD;
-
-	myEvent = new Event(t_sync, t_interval);
-	eventQ.push_back(myEvent);
-	std::push_heap(eventQ.begin(), eventQ.end(), eventOrder());
-
-	break;
-	case t_resume:
-	// resume virtual core for execution
-	currEvent->getCore(&curr_pCore, &curr_vCore);
-	if(!schedule_resume(curr_pCore, curr_vCore)){
-	// somethings wrong
-	return -1;
-	}
-	break;
-	}
 	};
 
-	// output results
+	/* output results
 	fclose(fout);
-
 	*/
 }

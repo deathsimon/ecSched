@@ -45,9 +45,23 @@ enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum coreType{c_big = 1, c_little};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
 */
-//enum eventType { t_yield = 1, t_interval, t_resume };
 
-enum eventType {event_newTasks = 1, event_schedule, event_yield, event_resume, event_end};
+#define	PATH_CONFIG	""
+
+enum eventType {event_yield, event_resume, event_genSchedule, event_end};
+/* [Event]
+ *	yeild:	All (activated) cores check their current	running tasks, find the core(s) which yield.
+ *			Find the next executable task.
+ *	resume:	First check all tasks to find the one(s) that can be resumed.
+ *			Then do what yeild does.
+ *	genSchedule:
+ *			Collect the statistics, e.g. load, avg power consumption, ...
+ *			Update task workloads and generate the scheduling plan for the next interval.
+ *			Then do what resume does.
+ *	event_end:
+ *			Collect the statistics, e.g. load, avg power consumption, ...
+ *			Output results and end simulation.
+ */
 
 struct FreqPowerPair {
 	unsigned int frequency;
