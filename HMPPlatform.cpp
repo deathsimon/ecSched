@@ -185,16 +185,16 @@ void HMPPlatform::run() {
 
 		switch (currEvent->type) {
 		case event_genSchedule:
-			// TODO: add new tasks to task queue and generate scheduling plan
+			HMPPlatform::genSchedule();
 			break;
 		case event_yield:
-			// TODO:
+			HMPPlatform::yieldTasks();
 			break;
 		case event_resume:
-			// TODO:
+			HMPPlatform::resumeTasks();
 			break;
 		case event_end:
-			// TODO: 
+			HMPPlatform::collectStatistics();
 			eventQ.clear();
 		default:
 			break;
@@ -204,4 +204,30 @@ void HMPPlatform::run() {
 	/* output results
 	fclose(fout);
 	*/
+}
+
+void HMPPlatform::genSchedule() {
+	/* First Collect the statistics, e.g. load, avg power consumption, ... */
+	HMPPlatform::collectStatistics();
+	/* Update task workloads and generate the scheduling plan for the next interval. */
+	HMPPlatform::updateTasks();
+	HMPPlatform::genPlan();
+	/* Then do what resume does.*/
+	HMPPlatform::resumeTasks();
+}
+
+void HMPPlatform::resumeTasks(){
+	/* First check all tasks to find the one(s) that can be resumed. */
+	// for(auto task : ){}
+	/* Then do what yeild does. */
+	HMPPlatform::yieldTasks();
+}
+
+void HMPPlatform::yieldTasks(){
+	for (auto cluster : coreClusters) {
+		for (auto core : *cluster) {
+			// TODO
+			// core->
+		}
+	}
 }

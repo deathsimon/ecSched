@@ -50,7 +50,7 @@ enum queuePos{q_head = 1, q_FIFO, q_tail};
 
 enum eventType {event_yield, event_resume, event_genSchedule, event_end};
 /* [Event]
- *	yeild:	All (activated) cores check their current	running tasks, find the core(s) which yield.
+ *	yeild:	All (activated) cores check their current running tasks, find the core(s) which yield.
  *			Find the next executable task.
  *	resume:	First check all tasks to find the one(s) that can be resumed.
  *			Then do what yeild does.

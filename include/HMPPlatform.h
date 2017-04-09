@@ -33,6 +33,15 @@ private:
 	void setCoreCluster(std::string);
 	void setTasks(std::string);
 	void setTaskArrival(std::string);
+
+	void genSchedule();
+	void collectStatistics() {};
+	void updateTasks() {};
+	void genPlan() {};
+
+	void resumeTasks();
+
+	void yieldTasks();
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;
