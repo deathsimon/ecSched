@@ -6,7 +6,8 @@
 HMPPlatform::HMPPlatform() {
 	coreClusters.clear();
 	eventQ.clear();
-	workloadCollection.clear();
+	workloadSet.clear();
+	tasksPool.clear();
 
 	t_now = 0;
 }
@@ -124,7 +125,7 @@ void HMPPlatform::setTasks(std::string path) {
 		newWorkload.push_back(reqCycles);
 	}
 
-	workloadCollection.push_back(&newWorkload);
+	workloadSet.push_back(&newWorkload);
 
 	fp.close();
 }
@@ -209,6 +210,8 @@ void HMPPlatform::run() {
 void HMPPlatform::genSchedule() {
 	/* First Collect the statistics, e.g. load, avg power consumption, ... */
 	HMPPlatform::collectStatistics();
+	/* Check if there are new arrival tasks */
+	HMPPlatform::checkNewTasks();
 	/* Update task workloads and generate the scheduling plan for the next interval. */
 	HMPPlatform::updateTasks();
 	HMPPlatform::genPlan();
@@ -216,9 +219,24 @@ void HMPPlatform::genSchedule() {
 	HMPPlatform::resumeTasks();
 }
 
+void HMPPlatform::checkNewTasks(){
+	Task* newTask;
+	// TODO
+	while (true){
+		newTask = new Task();
+		tasksPool.push_back(newTask);
+	};
+}
+
 void HMPPlatform::resumeTasks(){
 	/* First check all tasks to find the one(s) that can be resumed. */
-	// for(auto task : ){}
+	for(auto task : tasksPool){
+		/*
+		if (task->resumeable()) {
+			//task->resume();
+		}
+		*/
+	}
 	/* Then do what yeild does. */
 	HMPPlatform::yieldTasks();
 }

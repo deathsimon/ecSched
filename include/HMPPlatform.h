@@ -36,6 +36,7 @@ private:
 
 	void genSchedule();
 	void collectStatistics() {};
+	void checkNewTasks();
 	void updateTasks() {};
 	void genPlan() {};
 
@@ -45,7 +46,8 @@ private:
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;
-	std::vector<WorkloadSeq*> workloadCollection;
+	std::vector<WorkloadSeq*> workloadSet;
+	std::vector<Task*> tasksPool;
 
 	double t_now;	
 };
