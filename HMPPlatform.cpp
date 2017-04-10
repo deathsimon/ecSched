@@ -208,15 +208,26 @@ void HMPPlatform::run() {
 }
 
 void HMPPlatform::genSchedule() {
-	/* First Collect the statistics, e.g. load, avg power consumption, ... */
+	/* First, collect the statistics, e.g. load, avg power consumption, ... */
 	HMPPlatform::collectStatistics();
 	/* Check if there are new arrival tasks */
 	HMPPlatform::checkNewTasks();
 	/* Update task workloads and generate the scheduling plan for the next interval. */
 	HMPPlatform::updateTasks();
 	HMPPlatform::genPlan();
-	/* Then do what resume does.*/
-	HMPPlatform::resumeTasks();
+	/* Then do what yield does.*/
+	HMPPlatform::yieldTasks();
+}
+
+void HMPPlatform::collectStatistics(){
+	CoreStatistics cStatistic;
+	for (auto cluster : coreClusters) {
+		for (auto core : *cluster) {
+			core->execUntilTime(t_now);
+			cStatistic = core->getStatistics();
+			// TODO : process the information
+		}
+	}
 }
 
 void HMPPlatform::checkNewTasks(){
@@ -230,12 +241,10 @@ void HMPPlatform::checkNewTasks(){
 
 void HMPPlatform::resumeTasks(){
 	/* First check all tasks to find the one(s) that can be resumed. */
-	for(auto task : tasksPool){
-		/*
-		if (task->resumeable()) {
-			//task->resume();
+	for (auto task : tasksPool) {
+		if (task->resumeableAtTime(t_now)) {
+			task->resume();
 		}
-		*/
 	}
 	/* Then do what yeild does. */
 	HMPPlatform::yieldTasks();
@@ -245,7 +254,9 @@ void HMPPlatform::yieldTasks(){
 	for (auto cluster : coreClusters) {
 		for (auto core : *cluster) {
 			// TODO
-			// core->
+			// if ( core->taskYieldable() ){
+			//	core->yieldTask();
+			//}
 		}
 	}
 }

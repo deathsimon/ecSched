@@ -56,7 +56,7 @@ enum eventType {event_yield, event_resume, event_genSchedule, event_end};
  *	genSchedule:
  *			Collect the statistics, e.g. load, avg power consumption, ...
  *			Update task workloads and generate the scheduling plan for the next interval.
- *			Then do what resume does.
+ *			Then do what yield does.
  *	event_end:
  *			Collect the statistics, e.g. load, avg power consumption, ...
  *			Output results and end simulation.
@@ -69,6 +69,7 @@ struct FreqPowerPair {
 
 typedef std::vector<FreqPowerPair*> coreFeature;
 typedef std::deque<unsigned int> WorkloadSeq;
+typedef std::tuple<unsigned int, double, double> CoreStatistics;
 
 class HMPPlatform;
 class Core;

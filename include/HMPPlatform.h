@@ -35,7 +35,7 @@ private:
 	void setTaskArrival(std::string);
 
 	void genSchedule();
-	void collectStatistics() {};
+	void collectStatistics();
 	void checkNewTasks();
 	void updateTasks() {};
 	void genPlan() {};
