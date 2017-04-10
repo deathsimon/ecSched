@@ -34,8 +34,11 @@ public:
 
 	double fetchNxtReqCycles();
 
-	void execute();
-	void suspend();
+	bool resumeableAtTime(double);
+	void resume();
+
+	void executeAtTime(double);
+	void suspendAtTime(double);
 
 private:
 	TaskInfo Info;
@@ -46,14 +49,14 @@ private:
 
 class EC_Task : public Task {
 public:
-	EC_Task();
-	void setECredit(Core*, EnergyCredit);
-	double fetchECredit(Core*);
-	bool hasECredit();
-	bool hasECredit(Core*);
+	EC_Task() {};
+	void setECredit(Core*, EnergyCredit) {};
+	double fetchECredit(Core*) {};
+	bool hasECredit() {};
+	bool hasECredit(Core*) {};
 
-	void execute();
-	void suspend();
+	void executeAtTime(double);
+	void suspendAtTime(double);
 private:
 	std::map<Core*, EnergyCredit> ECredit;
 

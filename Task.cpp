@@ -51,26 +51,39 @@ double Task::fetchNxtReqCycles(){
 	return Info.currReqCycles;
 }
 
-void Task::execute() {
+bool Task::resumeableAtTime(double now){
+	bool resumeable = false;
+	// TODO
+	if (Info.status == TS_blocked /* && */) {
+		resumeable = true;
+	}
+	return resumeable;
+}
+
+void Task::resume() {
+	Info.status = TS_ready;
+}
+
+void Task::executeAtTime(double now) {
 	// TODO: 
 	//	1. set the start time
 	//	2. change the status
 }
 
-void Task::suspend() {
+void Task::suspendAtTime(double now) {
 	// TODO:
 	//	1. change the status
 	//	2. calculate executed cycles according to freq and time
 }
 
-void EC_Task::execute() {
-	Task::execute();
+void EC_Task::executeAtTime(double now) {
+	Task::executeAtTime(now);
 	// TODO:
 	//	3. set the suspend/yield event and insert into queue
 }
 
-void EC_Task::suspend() {
-	Task::suspend();
+void EC_Task::suspendAtTime(double now) {
+	Task::suspendAtTime(now);
 	// TODO:
 	//	3. reduce the ECredit
 }
