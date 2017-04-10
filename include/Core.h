@@ -40,10 +40,12 @@ public:
 	void setFrequency(unsigned int);
 
 	void addTask(Task*);
+
+	void execUntilTime(double);
+	CoreStatistics getStatistics();
 	
-	void resume(Time);
-	void interrupt(Time);
-	void pause(Time);
+	void resumeAtTime(Time);
+	void interruptAtTime(Time);
 
 private:
 	CoreInfo Info;

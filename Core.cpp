@@ -31,22 +31,27 @@ void Core::addTask(Task * task){
 	 *	Insert task into the runqueue.
 	 */
 }
-void Core::resume(Time){
+void Core::execUntilTime(double t_now){
+	/* TODO */
+}
+CoreStatistics Core::getStatistics(){
+	/* At the end of each interval, return the frequency, power, and load information.
+	 * Reset the time of busy.
+	 */
+	double currLoad = load;
+	load = 0.0;
+	return std::make_tuple(Info.OperFrequency, 0.0,/*power,*/ currLoad);
+}
+void Core::resumeAtTime(Time){
 	/* TODO:
-	 *	resume from pause or interrupt.
+	 *	resume from idle or interrupt.
 	 *	Find the next task from queue for execution.
 	 */
 }
-void Core::interrupt(Time){
+void Core::interruptAtTime(Time){
 	/* TODO:
 	 *	During an interval, if something happens, 
 	 *	interrupt the core.
-	 */
-}
-void Core::pause(Time){
-	/* TODO:
-	 *	At the end of each interval, pause the execution of Task.
-	 *	Update the load of the core and reset the time of busy.
 	 */
 }
 Task * Core::nextTask(){
