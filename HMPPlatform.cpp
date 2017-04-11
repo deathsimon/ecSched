@@ -12,6 +12,11 @@ HMPPlatform::HMPPlatform() {
 	t_now = 0;
 }
 
+HMPPlatform::~HMPPlatform(){
+	record.close();
+	std::cout << "End of Simulation" << std::endl;
+}
+
 void HMPPlatform::setup() {
 	Configs newConfig;
 
@@ -171,11 +176,14 @@ bool cmp_time(Event* &e, const double &t) {
 }
 
 void HMPPlatform::run() {
-	/*
-	// TODO: set up output file
-	fout = fopen("..\\result", "w");
-	*/
-
+	
+	try{
+		record.open(PATH_OUTPUT, std::ofstream::out);
+	}
+	catch (const std::exception& e){
+		throw e;
+	}
+	
 	Event* currEvent;
 	
 	while (!eventQ.empty()) {
@@ -189,10 +197,10 @@ void HMPPlatform::run() {
 			HMPPlatform::genSchedule();
 			break;
 		case event_yield:
-			HMPPlatform::yieldTasks();
+			HMPPlatform::taskYield();
 			break;
 		case event_resume:
-			HMPPlatform::resumeTasks();
+			HMPPlatform::taskResume();
 			break;
 		case event_end:
 			HMPPlatform::collectStatistics();
@@ -201,10 +209,6 @@ void HMPPlatform::run() {
 			break;
 		}
 	};
-
-	/* output results
-	fclose(fout);
-	*/
 }
 
 void HMPPlatform::genSchedule() {
@@ -215,19 +219,29 @@ void HMPPlatform::genSchedule() {
 	/* Update task workloads and generate the scheduling plan for the next interval. */
 	HMPPlatform::updateTasks();
 	HMPPlatform::genPlan();
-	/* Then do what yield does.*/
-	HMPPlatform::yieldTasks();
+	/* Then do what resume does.*/
+	HMPPlatform::taskResume();
 }
 
 void HMPPlatform::collectStatistics(){
 	CoreStatistics cStatistic;
+	double energyConsumption = 0.0;
+
+	record << std::setprecision(1) << t_now << '\t';
+
 	for (auto cluster : coreClusters) {
 		for (auto core : *cluster) {
 			core->execUntilTime(t_now);
 			cStatistic = core->getStatistics();
-			// TODO : process the information
+			/* output the frequency and load of the core*/
+			record << std::setprecision(0) << std::get<0>(cStatistic) << ' ' \
+				<< std::setprecision(3) << std::get<2>(cStatistic) << ' ';
+			/* accumulate the energy consumption */
+			energyConsumption += std::get<1>(cStatistic)*std::get<2>(cStatistic);
 		}
 	}
+	/* output the overall energy consumption */
+	record << std::setprecision(6) << energyConsumption << std::endl;
 }
 
 void HMPPlatform::checkNewTasks(){
@@ -239,24 +253,36 @@ void HMPPlatform::checkNewTasks(){
 	};
 }
 
-void HMPPlatform::resumeTasks(){
-	/* First check all tasks to find the one(s) that can be resumed. */
+void HMPPlatform::updateTasks(){
+	// TODO
+}
+
+void HMPPlatform::genPlan(){
+	// TODO
+}
+
+void HMPPlatform::taskResume(){
+	/* First check all tasks to find the one(s) that can be resumed. */		
 	for (auto task : tasksPool) {
 		if (task->resumeableAtTime(t_now)) {
 			task->resume();
 		}
 	}
-	/* Then do what yeild does. */
-	HMPPlatform::yieldTasks();
-}
-
-void HMPPlatform::yieldTasks(){
+	/* Then check for idle cores.If any, resume the core(s) and find the next executable task(s). */
 	for (auto cluster : coreClusters) {
 		for (auto core : *cluster) {
-			// TODO
-			// if ( core->taskYieldable() ){
-			//	core->yieldTask();
-			//}
+			// TODO: If the core is idle, try to resume it and assign with a task.
 		}
 	}
+}
+
+void HMPPlatform::taskYield(){
+	/* All (activated) cores check their current running tasks, find the core(s) which yield. */
+	for (auto cluster : coreClusters) {
+		for (auto core : *cluster) {
+			core->execUntilTime(t_now);
+		}
+	}
+	/* Then do what resume does. */
+	HMPPlatform::taskResume();
 }

@@ -18,5 +18,7 @@ int main(int argc, char* argv[]){
 
 	simulator->run();
 
+	delete(simulator);
+
 	return 0;
 }

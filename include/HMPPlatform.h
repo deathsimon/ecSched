@@ -23,6 +23,8 @@ bool cmp_time(Event* &e, const double &t);
 class HMPPlatform {
 public:
 	HMPPlatform();
+	~HMPPlatform();
+
 	void setup();
 	void run();	
 
@@ -37,17 +39,19 @@ private:
 	void genSchedule();
 	void collectStatistics();
 	void checkNewTasks();
-	void updateTasks() {};
-	void genPlan() {};
+	void updateTasks();
+	void genPlan();
 
-	void resumeTasks();
+	void taskResume();
 
-	void yieldTasks();
+	void taskYield();
 	
 	std::deque<Event*> eventQ;
 	std::vector<CoreCluster*> coreClusters;
 	std::vector<WorkloadSeq*> workloadSet;
 	std::vector<Task*> tasksPool;
 
-	double t_now;	
+	double t_now;
+
+	std::ofstream record;
 };

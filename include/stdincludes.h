@@ -4,6 +4,7 @@
 #include <cstring>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <list>
 #include <algorithm>
@@ -46,17 +47,18 @@ enum queuePos{q_head = 1, q_FIFO, q_tail};
 */
 
 #define	PATH_CONFIG	""
+#define PATH_OUTPUT ""
 
-enum eventType {event_yield, event_resume, event_genSchedule, event_end};
+enum eventType { event_resume, event_yield, event_genSchedule, event_end};
 /* [Event]
- *	yeild:	All (activated) cores check their current running tasks, find the core(s) which yield.
- *			Find the next executable task.
  *	resume:	First check all tasks to find the one(s) that can be resumed.
- *			Then do what yeild does.
+ *			Then check for idle cores. If any, resume the core(s) and find the next executable task(s).
+ *	yeild:	All (activated) cores check their current running tasks, find the core(s) which yield.
+ *			Then do what resume does.
  *	genSchedule:
  *			Collect the statistics, e.g. load, avg power consumption, ...
  *			Update task workloads and generate the scheduling plan for the next interval.
- *			Then do what yield does.
+ *			Then do what resume does.
  *	event_end:
  *			Collect the statistics, e.g. load, avg power consumption, ...
  *			Output results and end simulation.
