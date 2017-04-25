@@ -54,19 +54,42 @@ void HMPPlatform::loadConfigs(Configs* config) {
 	}
 	
 	config->ClusterPath.clear();
-	config->TaskPath.clear();
+	unsigned int amountCluster = 0;
+	fp >> amountCluster;
 
-	// TODO: parse configs and add paths according to configs
-	config->ClusterPath.push_back("");
-	config->TaskPath.push_back("");
+	std::string path = "";
+	std::getline(fp, path);
+	for (unsigned int i = 0; i < amountCluster; i++) {
+		path.clear();
+		std::getline(fp, path);
+		config->ClusterPath.push_back(path);
+	}
+
+	config->TaskPath.clear();
+	unsigned int amountTask = 0;
+	fp >> amountTask;
+
+	std::getline(fp, path);
+	for (unsigned int i = 0; i < amountTask; i++) {
+		path.clear();
+		std::getline(fp, path);
+		config->TaskPath.push_back(path);
+	}
+
+	std::getline(fp, path);
+	std::getline(fp, config->TaskArrivalPath);
 
 	fp.close();
 }
 
 void HMPPlatform::setCoreCluster(std::string path) {
-		
-	FILE* fp = std::fopen(path.c_str(), "r");
-	if (!fp) {
+	
+	std::ifstream fp;
+
+	try {
+		fp.open(path.c_str(), std::ifstream::in);
+	}
+	catch (const std::exception& e) {
 		throw "Fail to load config:" + path;
 	}
 
@@ -75,33 +98,46 @@ void HMPPlatform::setCoreCluster(std::string path) {
 	unsigned int numCores = 0;
 	Core* newCore = nullptr;
 	
-	/* TODO: get Core type */
-	// CoreType cType = ;
+	/* get Core type */
+	CoreType cType = whichCoreType(path);
 
-	// read amount of cores in the cluster from file
-	fscanf(fp, "%d", &numCores);
+	/* read amount of cores in the cluster from file */
+	fp >> numCores;
 
-	// read the Frequency-Power-Pair of the core
+	/* read the Frequency-Power-Pair of the core */
 	unsigned int numFPpair = 0;
-	fscanf(fp, "%ud", &numFPpair);
+	fp >> numFPpair;
+
 	coreFeature* cFeatrue = new coreFeature;
 	cFeatrue->clear();
 	while (numFPpair > 0){
 		FreqPowerPair* newPair = new FreqPowerPair();
-		fscanf(fp, "%ud %lf", &newPair->frequency, &newPair->power);
+		fp >> newPair->frequency >> newPair->power;
 		cFeatrue->push_back(newPair);
 		numFPpair--;
 	}
 
 	for (unsigned int i = 0; i < numCores; i++)	{
-		// TODO: create new cores 
-		// newCore = new Core("", cType, cFeatrue);
+		newCore = new Core(std::to_string(i), cType, cFeatrue);
 		newCluster->push_back(newCore);
 	}
 
 	coreClusters.push_back(newCluster);
 
-	fclose(fp);	
+	fp.close();
+}
+
+CoreType HMPPlatform::whichCoreType(std::string path){
+	CoreType type;
+
+	if (path.find("big") != std::string::npos) {
+		type = CT_big;
+	}
+	else if (path.find("little") != std::string::npos) {
+		type = CT_little;
+	}
+
+	return type;
 }
 
 void HMPPlatform::setTasks(std::string path) {
@@ -121,23 +157,32 @@ void HMPPlatform::setTasks(std::string path) {
 	unsigned int length = 0;
 	fp >> length;
 
-	std::deque<unsigned int> newWorkload;
-	newWorkload.clear();
+	std::deque<unsigned int>* newWorkload = new std::deque<unsigned int>;
+	newWorkload->clear();
 
 	unsigned int reqCycles = 0;
 	for (std::string line; std::getline(fp, line);) {
-		reqCycles = std::stoi(line.substr(0, line.find_first_of(" ")));
-		newWorkload.push_back(reqCycles);
+		if (!line.empty()) {
+			reqCycles = std::stoi(line.substr(0, line.find_first_of(" ")));
+			newWorkload->push_back(reqCycles);
+		}
 	}
 
-	workloadSet.push_back(&newWorkload);
+	workloadSet.push_back(newWorkload);
 
 	fp.close();
 }
 
-void HMPPlatform::setTaskArrival(std::string){
+void HMPPlatform::setTaskArrival(std::string path){
 
 	std::ifstream fp;
+
+	try {
+		fp.open(path.c_str(), std::ifstream::in);
+	}
+	catch (const std::exception&) {
+		throw "Fail to load task arrival path:" + path;
+	}
 
 	/* TODO:
 	 *	read the task arrival time,
@@ -224,11 +269,20 @@ void HMPPlatform::genSchedule() {
 }
 
 void HMPPlatform::collectStatistics(){
+	
+	record << std::setprecision(1) << t_now ;
+
+	collectCoreStatistics();
+	collectTaskStatistics();
+
+	record << std::endl;
+}
+
+void HMPPlatform::collectCoreStatistics(){
 	CoreStatistics cStatistic;
 	double energyConsumption = 0.0;
 
-	record << std::setprecision(1) << t_now << '\t';
-
+	record << '\t';
 	for (auto cluster : coreClusters) {
 		for (auto core : *cluster) {
 			core->execUntilTime(t_now);
@@ -242,6 +296,10 @@ void HMPPlatform::collectStatistics(){
 	}
 	/* output the overall energy consumption */
 	record << std::setprecision(6) << energyConsumption << std::endl;
+}
+
+void HMPPlatform::collectTaskStatistics(){
+	// TODO
 }
 
 void HMPPlatform::checkNewTasks(){

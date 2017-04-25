@@ -46,7 +46,7 @@ enum vcoreStatus{vs_running = 1, vs_waiting, vs_ready, vs_nocredit};
 enum queuePos{q_head = 1, q_FIFO, q_tail};
 */
 
-#define	PATH_CONFIG	""
+#define	PATH_CONFIG	"./config"
 #define PATH_OUTPUT ""
 
 enum eventType { event_resume, event_yield, event_genSchedule, event_end};

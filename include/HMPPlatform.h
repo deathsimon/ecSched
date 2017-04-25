@@ -1,4 +1,5 @@
 #pragma once
+
 #include<stdincludes.h>
 
 #include "Core.h"
@@ -33,11 +34,14 @@ public:
 private:
 	void loadConfigs(Configs*);	
 	void setCoreCluster(std::string);
+	CoreType whichCoreType(std::string);	
 	void setTasks(std::string);
 	void setTaskArrival(std::string);
 
 	void genSchedule();
 	void collectStatistics();
+	void collectCoreStatistics();
+	void collectTaskStatistics();
 	void checkNewTasks();
 	void updateTasks();
 	void genPlan();
