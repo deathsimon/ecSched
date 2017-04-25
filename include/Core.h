@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stdincludes.h"
-#include "HMPPlatform.h"
+//#include "HMPPlatform.h"
 #include "Task.h"
 
 extern HMPPlatform* simulator;

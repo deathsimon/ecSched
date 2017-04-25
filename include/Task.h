@@ -1,6 +1,6 @@
 #pragma once
 #include "stdincludes.h"
-#include "HMPPlatform.h"
+//#include "HMPPlatform.h"
 #include "Core.h"
 
 typedef unsigned int ReqCycles;
